@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react'
-import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import './App.css'
 import { getTransactions } from './api'
 import type { Transaction } from './api/types'
 import { TransactionsPage } from './pages/transactions-page/transactions-page'
-import { Button } from 'primereact/button'
+import { HomePage } from './pages/home-page/home-page'
 
 function AppInner() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
-  const navigate = useNavigate()
 
   useEffect(() => {
     const load = async () => {
@@ -25,15 +24,8 @@ function AppInner() {
 
   return (
     <>
-      <div>
-        <Button
-          severity="secondary"
-          label="Перейти к транзакциям"
-          onClick={() => navigate('/transactions')}
-        />
-      </div>
-
       <Routes>
+        <Route path="/" element={<HomePage />} />
         <Route
           path="/transactions"
           element={<TransactionsPage transactions={transactions} />}
@@ -45,7 +37,7 @@ function AppInner() {
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <AppInner />
     </BrowserRouter>
   )
