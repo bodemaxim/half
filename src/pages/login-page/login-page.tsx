@@ -30,9 +30,10 @@ export const LoginPage = () => {
   }
 
   return (
-    <div className="full-size">
-      <div className="m-10">
+    <div className="full-size p-5">
+
         <h1 className="text-3xl font-bold my-5 text-center">Войти</h1>
+<div className="w-full md:w-1/2 mx-auto">
         <FloatLabel>
           <InputText
             id="password"
@@ -43,10 +44,11 @@ export const LoginPage = () => {
           />
           <label htmlFor="password">Пароль</label>
         </FloatLabel>
-        <div className="flex justify-center my-5">
-        <Button type="submit" label="Войти" className="mt-2" onClick={enterApp} />
+</div>
+        <div className="flex justify-center my-5 w-full md:w-1/2 mx-auto">
+        <Button type="submit" label="Войти" className="mt-2 w-full" onClick={enterApp} />
         </div>
-      </div>
+
     </div>
   )
 }
