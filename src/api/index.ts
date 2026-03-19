@@ -3,7 +3,10 @@ import type { Transaction } from "./types"
 
 
 export const getTransactions = async (): Promise<Transaction[]> => {
-    const { error, data } = await supabase.from('transactions').select('*')
+    const { error, data } = await supabase
+        .from('transactions')
+        .select('*')
+        .order('payment_date', { ascending: false })
   
     if (error) {
       alert(`Ошибка загрузки транзакций: ${error.message}`)

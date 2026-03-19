@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from 'primereact/button'
 import { Calendar } from 'primereact/calendar'
 import { InputNumber } from 'primereact/inputnumber'
@@ -21,11 +21,38 @@ export const EditPage = ({ mode, payer, trackingStartDate }: EditPageProps) => {
   const [paymentDate, setPaymentDate] = useState<Date | null>(
     new Date(Temporal.Now.instant().epochMilliseconds),
   )
+  // `amountInput` — значение в инпуте (обновляется во время печати)
+  // `amount` — отдебаунсленное значение, по нему показываем скрытые формы
+  const [amountInput, setAmountInput] = useState<number | null>(null)
   const [amount, setAmount] = useState<number | null>(null)
   const [description, setDescription] = useState<string>('')
   const [onMax, setOnMax] = useState<number | null>(null)
   const [onSasha, setOnSasha] = useState<number | null>(null)
   const [sharePercent, setSharePercent] = useState<number>(50) // доля Макса в %
+
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      setAmount(amountInput)
+    }, 300)
+
+    return () => {
+      window.clearTimeout(t)
+    }
+  }, [amountInput])
+
+  useEffect(() => {
+    if (amount === null) {
+      setOnMax(null)
+      setOnSasha(null)
+      return
+    }
+
+    const ratio = sharePercent / 100
+    const maxPart = amount * ratio
+    const sashaPart = amount - maxPart
+    setOnMax(maxPart)
+    setOnSasha(sashaPart)
+  }, [amount, sharePercent])
 
   return (
     <div className="p-5">
@@ -61,22 +88,8 @@ export const EditPage = ({ mode, payer, trackingStartDate }: EditPageProps) => {
         <FloatLabel className="w-full mt-10">
           <InputNumber
             id="amount"
-            value={amount ?? null}
-            onValueChange={(e) => {
-              const newAmount = e.value ?? null
-              setAmount(newAmount)
-
-              if (newAmount !== null) {
-                const ratio = sharePercent / 100
-                const maxPart = newAmount * ratio
-                const sashaPart = newAmount - maxPart
-                setOnMax(maxPart)
-                setOnSasha(sashaPart)
-              } else {
-                setOnMax(null)
-                setOnSasha(null)
-              }
-            }}
+            value={amountInput ?? null}
+            onChange={(e) => setAmountInput(e.value ?? null)}
             mode="decimal"
             minFractionDigits={0}
             maxFractionDigits={0}
@@ -194,43 +207,40 @@ export const EditPage = ({ mode, payer, trackingStartDate }: EditPageProps) => {
           </>
         )}
 
-        <Button
-          className="w-full mt-6"
-          label="Сохранить"
-          severity="success"
-          onClick={async () => {
-            if (
-              !paymentDate ||
-              amount === null ||
-              onMax === null ||
-              onSasha === null ||
-              !payer ||
-              !trackingStartDate
-            ) {
-              alert('Заполните сумму, доли и выберите пользователя на главной странице')
+        {amount !== null && (
+          <Button
+            className="w-full mt-6"
+            label="Сохранить"
+            severity="success"
+            onClick={async () => {
+              if (!paymentDate || onMax === null || onSasha === null || !payer || !trackingStartDate) {
+                alert(
+                  'Заполните сумму, доли и выберите пользователя на главной странице',
+                )
 
-              return
-            }
+                return
+              }
 
-            const payload: Omit<Transaction, 'id' | 'created_at'> = {
-              payment_date: paymentDate.toISOString(),
-              payer,
-              amount,
-              type: 'purchase',
-              on_max: onMax,
-              on_sasha: onSasha,
-              category: 'unknown',
-              tracking_start_date: trackingStartDate,
-              description,
-            }
+              const payload: Omit<Transaction, 'id' | 'created_at'> = {
+                payment_date: paymentDate.toISOString(),
+                payer,
+                amount,
+                type: 'purchase',
+                on_max: onMax,
+                on_sasha: onSasha,
+                category: 'unknown',
+                tracking_start_date: trackingStartDate,
+                description,
+              }
 
-            const created = await createTransaction(payload)
+              const created = await createTransaction(payload)
 
-            if (created) {
-              navigate('/home')
-            }
-          }}
-        />
+              if (created) {
+                navigate('/home')
+              }
+            }}
+          />
+        )}
       </div>
     </div>
   )

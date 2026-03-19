@@ -44,10 +44,10 @@ export const TransactionsPage = ({ transactions }: TransactionsPageProps) => {
         tableStyle={{ minWidth: '64rem' }}
       >
         <Column
-          field="created_at"
+          field="payment_date"
           header="Дата"
           sortable
-          body={(rowData) => formatDateTime(rowData.created_at)}
+          body={(rowData) => formatDateTime(rowData.payment_date)}
         />
         <Column field="payer" header="Плательщик" sortable />
         <Column field="type" header="Тип" sortable />
