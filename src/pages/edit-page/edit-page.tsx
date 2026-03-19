@@ -37,6 +37,7 @@ export const EditPage = ({ mode }: EditPageProps) => {
       </div>
 
       <div className="w-full md:w-1/2 mx-auto mt-10 space-y-5">
+    
         <FloatLabel className="w-full">
           <Calendar
             id="payment_date"
@@ -53,7 +54,7 @@ export const EditPage = ({ mode }: EditPageProps) => {
 
         <FloatLabel className="w-full mt-10">
           <InputNumber
-            inputId="amount"
+            id="amount"
             value={amount ?? null}
             onValueChange={(e) => {
               const newAmount = e.value ?? null
@@ -80,10 +81,9 @@ export const EditPage = ({ mode }: EditPageProps) => {
 
         {amount !== null && (
           <>
-            <div className="w-full flex gap-4 mt-10">
-              <FloatLabel
-                className={`flex-1 ${onMax !== null ? 'p-inputwrapper-filled' : ''}`}
-              >
+            <div className="w-full flex-b mt-10">
+<div className="flex-1 max-w-[calc(50%-8px)]">
+              <FloatLabel className="flex-1">
                 <InputNumber
                   inputId="on_max"
                   value={onMax}
@@ -103,15 +103,22 @@ export const EditPage = ({ mode }: EditPageProps) => {
                   minFractionDigits={0}
                   maxFractionDigits={0}
                   className="w-full"
+                  pt={{
+                    input: {
+                      root: {
+                        style: { minWidth: '40px' },
+                      },
+                    },
+                  }}
                 />
                 <label htmlFor="on_max">
                   На Максе ({Math.round(sharePercent)}%)
                 </label>
               </FloatLabel>
+</div>
 
-              <FloatLabel
-                className={`flex-1 ${onSasha !== null ? 'p-inputwrapper-filled' : ''}`}
-              >
+<div className="flex-1 max-w-[calc(50%-8px)]">
+              <FloatLabel className="flex-1">
                 <InputNumber
                   inputId="on_sasha"
                   value={onSasha}
@@ -131,11 +138,19 @@ export const EditPage = ({ mode }: EditPageProps) => {
                   minFractionDigits={0}
                   maxFractionDigits={0}
                   className="w-full"
+                  pt={{
+                    input: {
+                      root: {
+                        style: { minWidth: '40px' },
+                      },
+                    },
+                  }}
                 />
                 <label htmlFor="on_sasha">
                   На Саше ({Math.round(100 - sharePercent)}%)
                 </label>
               </FloatLabel>
+              </div>
             </div>
 
             <div className="w-full mt-4">
