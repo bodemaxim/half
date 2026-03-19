@@ -6,6 +6,7 @@ import type { Transaction } from './api/types'
 import { TransactionsPage } from './pages/transactions-page/transactions-page'
 import { HomePage } from './pages/home-page/home-page'
 import { LoginPage } from './pages/login-page/login-page'
+import { EditPage } from './pages/edit-page/edit-page'
 
 function AppInner() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
@@ -29,6 +30,7 @@ function AppInner() {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/home" element={<HomePage />} />
+        <Route path="/new" element={<EditPage mode="new" />} />
         <Route
           path="/transactions"
           element={<TransactionsPage transactions={transactions} />}

@@ -1,6 +1,7 @@
 export type Transaction = {
     id: string
     created_at: string
+    payment_date: string
     payer: 'max' | 'sasha'
     amount: number
     type: 'purchase' | 'transfer'
