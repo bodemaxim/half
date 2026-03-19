@@ -10,6 +10,8 @@ import { EditPage } from './pages/edit-page/edit-page'
 
 function AppInner() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [payer, setPayer] = useState<Transaction['payer'] | null>(null)
+  const selectedUserStorageKey = 'half_selected_user'
 
   useEffect(() => {
     const load = async () => {
@@ -24,13 +26,36 @@ function AppInner() {
     void load()
   }, [])
 
+  useEffect(() => {
+    const savedUser = localStorage.getItem(selectedUserStorageKey)
+    if (savedUser === 'max' || savedUser === 'sasha') {
+      setPayer(savedUser)
+    }
+  }, [])
+
   return (
     <>
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/home" element={<HomePage />} />
-        <Route path="/new" element={<EditPage mode="new" />} />
+        <Route
+          path="/home"
+          element={<HomePage payer={payer} setPayer={setPayer} />}
+        />
+        <Route
+          path="/new"
+          element={
+            <EditPage
+              mode="new"
+              payer={payer}
+              trackingStartDate={
+                transactions.length > 0
+                  ? transactions[transactions.length - 1].tracking_start_date
+                  : undefined
+              }
+            />
+          }
+        />
         <Route
           path="/transactions"
           element={<TransactionsPage transactions={transactions} />}

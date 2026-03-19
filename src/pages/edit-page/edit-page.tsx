@@ -3,20 +3,26 @@ import { Button } from 'primereact/button'
 import { Calendar } from 'primereact/calendar'
 import { InputNumber } from 'primereact/inputnumber'
 import { FloatLabel } from 'primereact/floatlabel'
+import { InputTextarea } from 'primereact/inputtextarea'
 import { Slider } from 'primereact/slider'
 import { useNavigate } from 'react-router-dom'
 import { Temporal } from '@js-temporal/polyfill'
+import { createTransaction } from '../../api'
+import type { Transaction } from '../../api/types'
 
 type EditPageProps = {
   mode: 'new' | 'edit'
+  payer?: Transaction['payer'] | null
+  trackingStartDate?: Transaction['tracking_start_date']
 }
 
-export const EditPage = ({ mode }: EditPageProps) => {
+export const EditPage = ({ mode, payer, trackingStartDate }: EditPageProps) => {
   const navigate = useNavigate()
   const [paymentDate, setPaymentDate] = useState<Date | null>(
     new Date(Temporal.Now.instant().epochMilliseconds),
   )
   const [amount, setAmount] = useState<number | null>(null)
+  const [description, setDescription] = useState<string>('')
   const [onMax, setOnMax] = useState<number | null>(null)
   const [onSasha, setOnSasha] = useState<number | null>(null)
   const [sharePercent, setSharePercent] = useState<number>(50) // доля Макса в %
@@ -173,8 +179,58 @@ export const EditPage = ({ mode }: EditPageProps) => {
                 className="w-full"
               />
             </div>
+
+            <FloatLabel className="w-full mt-10">
+              <InputTextarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={4}
+                autoResize
+                className="w-full"
+              />
+              <label htmlFor="description">Описание</label>
+            </FloatLabel>
           </>
         )}
+
+        <Button
+          className="w-full mt-6"
+          label="Сохранить"
+          severity="success"
+          onClick={async () => {
+            if (
+              !paymentDate ||
+              amount === null ||
+              onMax === null ||
+              onSasha === null ||
+              !payer ||
+              !trackingStartDate
+            ) {
+              alert('Заполните сумму, доли и выберите пользователя на главной странице')
+
+              return
+            }
+
+            const payload: Omit<Transaction, 'id' | 'created_at'> = {
+              payment_date: paymentDate.toISOString(),
+              payer,
+              amount,
+              type: 'purchase',
+              on_max: onMax,
+              on_sasha: onSasha,
+              category: 'unknown',
+              tracking_start_date: trackingStartDate,
+              description,
+            }
+
+            const created = await createTransaction(payload)
+
+            if (created) {
+              navigate('/home')
+            }
+          }}
+        />
       </div>
     </div>
   )

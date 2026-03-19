@@ -1,12 +1,18 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import type { Dispatch, SetStateAction } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from 'primereact/button'
 import { Dropdown } from 'primereact/dropdown'
 import { FloatLabel } from 'primereact/floatlabel'
+import type { Transaction } from '../../api/types'
 
-export const HomePage = () => {
+type HomePageProps = {
+  payer: Transaction['payer'] | null
+  setPayer: Dispatch<SetStateAction<Transaction['payer'] | null>>
+}
+
+export const HomePage = ({ payer, setPayer }: HomePageProps) => {
   const navigate = useNavigate()
-  const [selectedUser, setSelectedUser] = useState<string | null>(null)
   const selectedUserStorageKey = 'half_selected_user'
 
   const userOptions = [
@@ -18,19 +24,27 @@ export const HomePage = () => {
     const savedUser = localStorage.getItem(selectedUserStorageKey)
 
     if (savedUser && userOptions.some((option) => option.value === savedUser)) {
-      setSelectedUser(savedUser)
+      setPayer(savedUser as Transaction['payer'])
     }
-  }, [])
+  }, [setPayer])
 
   return (
     <div className="p-5 min-h-screen flex flex-col">
       <div className="flex-1">
-        <h1 className="text-3xl font-bold my-5 text-center mb-10">{selectedUser}</h1>
+        <h1 className="text-3xl font-bold my-5 text-center mb-10">{payer}</h1>
         <div className="w-full md:w-1/2 mb-5 mx-auto">
           <Button
             severity="success"
             label="Создать"
-            onClick={() => navigate('/new')}
+            onClick={() => {
+              if (!payer) {
+                alert('Сначала выберите пользователя')
+
+                return
+              }
+
+              navigate('/new')
+            }}
             className="w-full mt-2"
           />
         </div>
@@ -47,9 +61,9 @@ export const HomePage = () => {
         <FloatLabel className="w-full">
           <Dropdown
             inputId="user-select"
-            value={selectedUser}
+            value={payer}
             onChange={(e) => {
-              setSelectedUser(e.value)
+              setPayer(e.value as Transaction['payer'])
               localStorage.setItem(selectedUserStorageKey, e.value)
             }}
             options={userOptions}
