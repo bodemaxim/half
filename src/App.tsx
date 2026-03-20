@@ -40,7 +40,7 @@ function AppInner() {
         <Route path="/login" element={<LoginPage />} />
         <Route
           path="/home"
-          element={<HomePage payer={payer} setPayer={setPayer} />}
+          element={<HomePage payer={payer} setPayer={setPayer} transactions={transactions} />}
         />
         <Route
           path="/new"

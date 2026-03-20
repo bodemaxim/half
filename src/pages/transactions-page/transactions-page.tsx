@@ -43,7 +43,7 @@ export const TransactionsPage = ({ transactions }: TransactionsPageProps) => {
       const hour = String(zonedDateTime.hour).padStart(2, '0')
       const minute = String(zonedDateTime.minute).padStart(2, '0')
       return `${day}.${month}.${year} ${hour}:${minute}`
-    } catch (e) {
+    } catch {
       return value
     }
   }
@@ -62,7 +62,7 @@ export const TransactionsPage = ({ transactions }: TransactionsPageProps) => {
   )
 
   return (
-    <div className="p-5">
+    <div className="h-dvhp-5">
       <div className="flex-b">
         <h1 className="text-3xl font-bold m-0">Транзакции</h1>
         <Button
@@ -79,7 +79,7 @@ export const TransactionsPage = ({ transactions }: TransactionsPageProps) => {
   value={transactions}
   stripedRows
   showGridlines
-  scrollable
+  scrollable={isMobile}
   scrollHeight="70vh"
   tableStyle={isMobile ? undefined : { minWidth: '64rem' }}
 >
