@@ -2,30 +2,69 @@ import type { TransactionsPageProps } from './transactions-page.types'
 import { DataTable } from 'primereact/datatable'
 import { Column } from 'primereact/column'
 import { Button } from 'primereact/button'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Temporal } from '@js-temporal/polyfill'
 
 export const TransactionsPage = ({ transactions }: TransactionsPageProps) => {
   const navigate = useNavigate()
-  const formatDateTime = (value: string | null | undefined) => {
-    if (!value) {
-      return ''
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 640px)')
+
+    // Принимаем либо событие, либо сам объект mq для инициализации
+    const update = (e: MediaQueryListEvent | MediaQueryList) => {
+      setIsMobile(!e.matches)
     }
 
-    const zonedDateTime = Temporal.Instant.from(value).toZonedDateTimeISO('UTC')
-    const day = String(zonedDateTime.day).padStart(2, '0')
-    const month = String(zonedDateTime.month).padStart(2, '0')
-    const year = String(zonedDateTime.year)
-    const hour = String(zonedDateTime.hour).padStart(2, '0')
-    const minute = String(zonedDateTime.minute).padStart(2, '0')
+    // Устанавливаем начальное значение при монтировании
+    update(mq)
 
-    return `${day}.${month}.${year} ${hour}:${minute}`
+    // Современный способ подписки
+    if (typeof mq.addEventListener === 'function') {
+      mq.addEventListener('change', update)
+      return () => mq.removeEventListener('change', update)
+    } 
+    // Поддержка старых браузеров (Safari < 14)
+    else {
+      mq.addListener(update)
+      return () => mq.removeListener(update)
+    }
+  }, [])
+
+  const formatDateTime = (value: string | null | undefined) => {
+    if (!value) return ''
+    try {
+      const zonedDateTime = Temporal.Instant.from(value).toZonedDateTimeISO('UTC')
+      const day = String(zonedDateTime.day).padStart(2, '0')
+      const month = String(zonedDateTime.month).padStart(2, '0')
+      const year = String(zonedDateTime.year)
+      const hour = String(zonedDateTime.hour).padStart(2, '0')
+      const minute = String(zonedDateTime.minute).padStart(2, '0')
+      return `${day}.${month}.${year} ${hour}:${minute}`
+    } catch (e) {
+      return value
+    }
   }
+
+  const renderMobileData = (t: (typeof transactions)[number]) => (
+    <ul className="m-0 p-0 list-none text-sm space-y-1">
+      <li><strong>Плательщик:</strong> {t.payer}</li>
+      <li><strong>Тип:</strong> {t.type}</li>
+      <li><strong>Сумма:</strong> {t.amount}</li>
+      <li><strong>На Максе:</strong> {t.on_max}</li>
+      <li><strong>На Саше:</strong> {t.on_sasha}</li>
+      <li><strong>Категория:</strong> {t.category}</li>
+      <li><strong>Описание:</strong> {t.description}</li>
+      <li><strong>Дата старта:</strong> {formatDateTime(t.tracking_start_date)}</li>
+    </ul>
+  )
 
   return (
     <div className="p-5">
       <div className="flex-b">
-      <h1 className="text-3xl font-bold my-5">Транзакции</h1>
+        <h1 className="text-3xl font-bold m-0">Транзакции</h1>
         <Button
           icon="pi pi-backward"
           rounded
@@ -36,34 +75,39 @@ export const TransactionsPage = ({ transactions }: TransactionsPageProps) => {
       </div>
 
       <DataTable
-        value={transactions}
-        stripedRows
-        showGridlines
-        scrollable
-        scrollHeight="70vh"
-        tableStyle={{ minWidth: '64rem' }}
-      >
-        <Column
-          field="payment_date"
-          header="Дата"
-          sortable
-          body={(rowData) => formatDateTime(rowData.payment_date)}
-        />
-        <Column field="payer" header="Плательщик" sortable />
-        <Column field="type" header="Тип" sortable />
-        <Column field="amount" header="Сумма" sortable />
-        <Column field="on_max" header="На Максе" sortable />
-        <Column field="on_sasha" header="На Саше" sortable />
-        <Column field="category" header="Категория" sortable />
-        <Column field="description" header="Описание" />
-        <Column
-          field="tracking_start_date"
-          header="Дата старта"
-          sortable
-          body={(rowData) => formatDateTime(rowData.tracking_start_date)}
-        />
-      </DataTable>
+  key={isMobile ? 'mobile' : 'desktop'}
+  value={transactions}
+  stripedRows
+  showGridlines
+  scrollable
+  scrollHeight="70vh"
+  tableStyle={isMobile ? undefined : { minWidth: '64rem' }}
+>
+  <Column
+    field="payment_date"
+    header="Дата"
+    sortable
+    body={(rowData) => formatDateTime(rowData.payment_date)}
+  />
+
+  {isMobile && <Column header="Данные" body={renderMobileData} />}
+  
+  {!isMobile && <Column field="payer" header="Плательщик" sortable />}
+  {!isMobile && <Column field="type" header="Тип" sortable />}
+  {!isMobile && <Column field="amount" header="Сумма" sortable />}
+  {!isMobile && <Column field="on_max" header="На Максе" sortable />}
+  {!isMobile && <Column field="on_sasha" header="На Саше" sortable />}
+  {!isMobile && <Column field="category" header="Категория" sortable />}
+  {!isMobile && <Column field="description" header="Описание" />}
+  {!isMobile && (
+    <Column
+      field="tracking_start_date"
+      header="Дата старта"
+      sortable
+      body={(rowData) => formatDateTime(rowData.tracking_start_date)}
+    />
+  )}
+</DataTable>
     </div>
   )
 }
-
