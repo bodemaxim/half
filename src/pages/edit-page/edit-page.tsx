@@ -11,39 +11,59 @@ import { createTransaction } from '../../api'
 import type { Transaction } from '../../api/types'
 
 type EditPageProps = {
-  mode: 'new' | 'edit'
+  mode: 'new' | 'edit' | 'close_period'
   payer?: Transaction['payer'] | null
   trackingStartDate?: Transaction['tracking_start_date']
+  /** Предзаполнение суммы (режим «Закрыть период») */
+  defaultAmount?: number
 }
 
-export const EditPage = ({ mode, payer, trackingStartDate }: EditPageProps) => {
+export const EditPage = ({
+  mode,
+  payer,
+  trackingStartDate,
+  defaultAmount,
+}: EditPageProps) => {
   const navigate = useNavigate()
   const [paymentDate, setPaymentDate] = useState<Date | null>(
     new Date(Temporal.Now.instant().epochMilliseconds),
   )
-  // `amountInput` — значение в инпуте (обновляется во время печати)
-  // `amount` — отдебаунсленное значение, по нему показываем скрытые формы
-  const [amountInput, setAmountInput] = useState<number | null>(null)
-  const [amount, setAmount] = useState<number | null>(null)
-  const [description, setDescription] = useState<string>('')
+  const [amount, setAmount] = useState<number | null>(() =>
+    mode === 'close_period' && defaultAmount !== undefined ? defaultAmount : null,
+  )
+  const [description, setDescription] = useState<string>(() =>
+    mode === 'close_period'
+      ? 'Это последняя транзакция текущего периода, перевод!'
+      : '',
+  )
   const [onMax, setOnMax] = useState<number | null>(null)
   const [onSasha, setOnSasha] = useState<number | null>(null)
-  const [sharePercent, setSharePercent] = useState<number>(50) // доля Макса в %
+  const [sharePercent, setSharePercent] = useState<number>(50)
 
   useEffect(() => {
-    const t = window.setTimeout(() => {
-      setAmount(amountInput)
-    }, 300)
+    if (mode === 'close_period') {
+      if (amount === null || !payer) {
+        setOnMax(null)
+        setOnSasha(null)
 
-    return () => {
-      window.clearTimeout(t)
+        return
+      }
+
+      if (payer === 'sasha') {
+        setOnMax(0)
+        setOnSasha(amount)
+      } else {
+        setOnMax(amount)
+        setOnSasha(0)
+      }
+
+      return
     }
-  }, [amountInput])
 
-  useEffect(() => {
     if (amount === null) {
       setOnMax(null)
       setOnSasha(null)
+
       return
     }
 
@@ -52,13 +72,17 @@ export const EditPage = ({ mode, payer, trackingStartDate }: EditPageProps) => {
     const sashaPart = amount - maxPart
     setOnMax(maxPart)
     setOnSasha(sashaPart)
-  }, [amount, sharePercent])
+  }, [mode, amount, sharePercent, payer])
 
   return (
     <div className="p-5">
       <div className="flex-b">
         <h1 className="text-3xl font-bold my-5">
-          {mode === 'new' ? 'Новая транзакция' : 'Редактирование транзакции'}
+          {mode === 'close_period'
+            ? 'Закрыть период'
+            : mode === 'new'
+              ? 'Новая транзакция'
+              : 'Редактирование транзакции'}
         </h1>
         <Button
           icon="pi pi-backward"
@@ -70,7 +94,6 @@ export const EditPage = ({ mode, payer, trackingStartDate }: EditPageProps) => {
       </div>
 
       <div className="w-full md:w-1/2 mx-auto mt-10 space-y-5">
-    
         <FloatLabel className="w-full">
           <Calendar
             id="payment_date"
@@ -84,12 +107,11 @@ export const EditPage = ({ mode, payer, trackingStartDate }: EditPageProps) => {
           <label htmlFor="payment_date">Дата платежа</label>
         </FloatLabel>
 
-
         <FloatLabel className="w-full mt-10">
           <InputNumber
             id="amount"
-            value={amountInput ?? null}
-            onChange={(e) => setAmountInput(e.value ?? null)}
+            value={amount ?? null}
+            onChange={(e) => setAmount(e.value ?? null)}
             mode="decimal"
             minFractionDigits={0}
             maxFractionDigits={0}
@@ -98,77 +120,77 @@ export const EditPage = ({ mode, payer, trackingStartDate }: EditPageProps) => {
           <label htmlFor="amount">Сумма</label>
         </FloatLabel>
 
-        {amount !== null && (
+        {mode !== 'close_period' && (
           <>
-            <div className="w-full flex-b mt-10">
-<div className="flex-1 max-w-[calc(50%-8px)]">
-              <FloatLabel className="flex-1">
-                <InputNumber
-                  inputId="on_max"
-                  value={onMax}
-                  onValueChange={(e) => {
-                    const newOnMax = e.value ?? null
-                    setOnMax(newOnMax)
-
-                    if (amount !== null && newOnMax !== null) {
-                      const newOnSasha = amount - newOnMax
-                      setOnSasha(newOnSasha)
-
-                      const ratio = amount === 0 ? 0 : (newOnMax / amount) * 100
-                      setSharePercent(ratio)
-                    }
-                  }}
-                  mode="decimal"
-                  minFractionDigits={0}
-                  maxFractionDigits={0}
-                  className="w-full"
-                  pt={{
-                    input: {
-                      root: {
-                        style: { minWidth: '40px' },
-                      },
-                    },
-                  }}
-                />
-                <label htmlFor="on_max">
-                  На Максе ({Math.round(sharePercent)}%)
-                </label>
-              </FloatLabel>
-</div>
-
-<div className="flex-1 max-w-[calc(50%-8px)]">
-              <FloatLabel className="flex-1">
-                <InputNumber
-                  inputId="on_sasha"
-                  value={onSasha}
-                  onValueChange={(e) => {
-                    const newOnSasha = e.value ?? null
-                    setOnSasha(newOnSasha)
-
-                    if (amount !== null && newOnSasha !== null) {
-                      const newOnMax = amount - newOnSasha
+            <div className="w-full flex-b mt-10 gap-4">
+              <div className="flex-1 max-w-[calc(50%-8px)]">
+                <FloatLabel className="flex-1">
+                  <InputNumber
+                    inputId="on_max"
+                    value={onMax}
+                    onValueChange={(e) => {
+                      const newOnMax = e.value ?? null
                       setOnMax(newOnMax)
 
-                      const ratio = amount === 0 ? 0 : (newOnMax / amount) * 100
-                      setSharePercent(ratio)
-                    }
-                  }}
-                  mode="decimal"
-                  minFractionDigits={0}
-                  maxFractionDigits={0}
-                  className="w-full"
-                  pt={{
-                    input: {
-                      root: {
-                        style: { minWidth: '40px' },
+                      if (amount !== null && newOnMax !== null) {
+                        const newOnSasha = amount - newOnMax
+                        setOnSasha(newOnSasha)
+
+                        const ratio = amount === 0 ? 0 : (newOnMax / amount) * 100
+                        setSharePercent(ratio)
+                      }
+                    }}
+                    mode="decimal"
+                    minFractionDigits={0}
+                    maxFractionDigits={0}
+                    className="w-full"
+                    pt={{
+                      input: {
+                        root: {
+                          style: { minWidth: '40px' },
+                        },
                       },
-                    },
-                  }}
-                />
-                <label htmlFor="on_sasha">
-                  На Саше ({Math.round(100 - sharePercent)}%)
-                </label>
-              </FloatLabel>
+                    }}
+                  />
+                  <label htmlFor="on_max">
+                    На Максе ({Math.round(sharePercent)}%)
+                  </label>
+                </FloatLabel>
+              </div>
+
+              <div className="flex-1 max-w-[calc(50%-8px)]">
+                <FloatLabel className="flex-1">
+                  <InputNumber
+                    inputId="on_sasha"
+                    value={onSasha}
+                    onValueChange={(e) => {
+                      const newOnSasha = e.value ?? null
+                      setOnSasha(newOnSasha)
+
+                      if (amount !== null && newOnSasha !== null) {
+                        const newOnMax = amount - newOnSasha
+                        setOnMax(newOnMax)
+
+                        const ratio = amount === 0 ? 0 : (newOnMax / amount) * 100
+                        setSharePercent(ratio)
+                      }
+                    }}
+                    mode="decimal"
+                    minFractionDigits={0}
+                    maxFractionDigits={0}
+                    className="w-full"
+                    pt={{
+                      input: {
+                        root: {
+                          style: { minWidth: '40px' },
+                        },
+                      },
+                    }}
+                  />
+                  <label htmlFor="on_sasha">
+                    На Саше ({Math.round(100 - sharePercent)}%)
+                  </label>
+                </FloatLabel>
               </div>
             </div>
 
@@ -192,55 +214,85 @@ export const EditPage = ({ mode, payer, trackingStartDate }: EditPageProps) => {
                 className="w-full"
               />
             </div>
-
-            <FloatLabel className="w-full mt-10">
-              <InputTextarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={4}
-                autoResize
-                className="w-full"
-              />
-              <label htmlFor="description">Описание</label>
-            </FloatLabel>
           </>
         )}
 
-        {amount !== null && (
-          <Button
-            className="w-full mt-6"
-            label="Сохранить"
-            severity="success"
-            onClick={async () => {
-              if (!paymentDate || onMax === null || onSasha === null || !payer || !trackingStartDate) {
+        <FloatLabel className="w-full mt-10">
+          <InputTextarea
+            id="description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+            autoResize
+            className="w-full"
+          />
+          <label htmlFor="description">Описание</label>
+        </FloatLabel>
+
+        <Button
+          className="w-full mt-6"
+          label="Сохранить"
+          severity="success"
+          onClick={async () => {
+            if (!paymentDate || amount === null || !payer) {
+              alert(
+                'Заполните сумму и выберите пользователя на главной странице',
+              )
+
+              return
+            }
+
+            if (mode !== 'close_period') {
+              if (
+                onMax === null ||
+                onSasha === null ||
+                !trackingStartDate
+              ) {
                 alert(
                   'Заполните сумму, доли и выберите пользователя на главной странице',
                 )
 
                 return
               }
+            }
 
-              const payload: Omit<Transaction, 'id' | 'created_at'> = {
-                payment_date: paymentDate.toISOString(),
-                payer,
-                amount,
-                type: 'purchase',
-                on_max: onMax,
-                on_sasha: onSasha,
-                category: 'unknown',
-                tracking_start_date: trackingStartDate,
-                description,
-              }
+            const resolvedOnMax =
+              mode === 'close_period'
+                ? payer === 'max'
+                  ? amount
+                  : 0
+                : onMax!
+            const resolvedOnSasha =
+              mode === 'close_period'
+                ? payer === 'sasha'
+                  ? amount
+                  : 0
+                : onSasha!
 
-              const created = await createTransaction(payload)
+            const resolvedTrackingStart =
+              mode === 'close_period'
+                ? new Date(paymentDate.getTime() + 1000).toISOString()
+                : trackingStartDate!
 
-              if (created) {
-                navigate('/home')
-              }
-            }}
-          />
-        )}
+            const payload: Omit<Transaction, 'id' | 'created_at'> = {
+              payment_date: paymentDate.toISOString(),
+              payer,
+              amount,
+              type: 'purchase',
+              on_max: resolvedOnMax,
+              on_sasha: resolvedOnSasha,
+              category: 'unknown',
+              tracking_start_date: resolvedTrackingStart,
+              description,
+            }
+
+            const created = await createTransaction(payload)
+
+            if (created) {
+              navigate('/home')
+            }
+          }}
+        />
       </div>
     </div>
   )

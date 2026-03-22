@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import './App.css'
 import { getTransactions } from './api'
 import type { Transaction } from './api/types'
@@ -7,6 +7,35 @@ import { TransactionsPage } from './pages/transactions-page/transactions-page'
 import { HomePage } from './pages/home-page/home-page'
 import { LoginPage } from './pages/login-page/login-page'
 import { EditPage } from './pages/edit-page/edit-page'
+
+function ClosePeriodPage({
+  payer,
+  transactions,
+}: {
+  payer: Transaction['payer'] | null
+  transactions: Transaction[]
+}) {
+  const location = useLocation()
+  const state = location.state as
+    | { amount?: number; trackingStartDate?: string | null }
+    | null
+    | undefined
+
+  const trackingStartDate =
+    state?.trackingStartDate ??
+    (typeof transactions[0]?.tracking_start_date === 'string'
+      ? transactions[0].tracking_start_date
+      : undefined)
+
+  return (
+    <EditPage
+      mode="close_period"
+      payer={payer}
+      trackingStartDate={trackingStartDate}
+      defaultAmount={state?.amount}
+    />
+  )
+}
 
 function AppInner() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
@@ -55,6 +84,10 @@ function AppInner() {
               }
             />
           }
+        />
+        <Route
+          path="/close-period"
+          element={<ClosePeriodPage payer={payer} transactions={transactions} />}
         />
         <Route
           path="/transactions"

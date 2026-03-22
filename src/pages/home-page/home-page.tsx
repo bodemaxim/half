@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
+import { Temporal } from '@js-temporal/polyfill'
 import { useNavigate } from 'react-router-dom'
 import { Button } from 'primereact/button'
 import { Dropdown } from 'primereact/dropdown'
@@ -32,23 +33,39 @@ export const HomePage = ({ payer, setPayer, transactions }: HomePageProps) => {
   const formatMoney = (value: number) =>
     value.toLocaleString('ru-RU', { maximumFractionDigits: 0 })
 
+  const formatPeriodStartDate = (value: string | null) => {
+    if (!value) return ''
+
+    try {
+      const zdt = Temporal.Instant.from(value).toZonedDateTimeISO('UTC')
+      const day = String(zdt.day).padStart(2, '0')
+      const month = String(zdt.month).padStart(2, '0')
+      const year = String(zdt.year).slice(-2)
+
+      return `${day}.${month}.${year}`
+    } catch {
+      return value
+    }
+  }
+
   const currentPeriodStart =
     typeof transactions[0]?.tracking_start_date === 'string'
       ? transactions[0].tracking_start_date
       : null
 
   const spentForCurrentPeriod = (() => {
-    console.log(2, currentPeriodStart)
-    if (!currentPeriodStart) return { onSasha: 0, onMax: 0 }
+    if (!currentPeriodStart) {
+      return { onSasha: 0, onMax: 0, realSasha: 0, realMax: 0 }
+    }
 
     const startMs = new Date(currentPeriodStart).getTime()
     const nowMs = new Date().getTime()
 
     let onSasha = 0
     let onMax = 0
+    let realSasha = 0
+    let realMax = 0
 
-
-    console.log(1, transactions)
     for (const t of transactions) {
       if (t.type !== 'purchase') continue
       if (!t.tracking_start_date) continue
@@ -64,10 +81,44 @@ export const HomePage = ({ payer, setPayer, transactions }: HomePageProps) => {
 
       onMax += t.on_max
       onSasha += t.on_sasha
+
+      if (t.payer === 'sasha') realSasha += t.amount
+      if (t.payer === 'max') realMax += t.amount
     }
 
-    return { onSasha, onMax }
+    return { onSasha, onMax, realSasha, realMax }
   })()
+
+  const closingPeriodGapSasha = Math.abs(
+    spentForCurrentPeriod.realSasha - spentForCurrentPeriod.onSasha,
+  )
+  const closingPeriodGapMax = Math.abs(
+    spentForCurrentPeriod.realMax - spentForCurrentPeriod.onMax,
+  )
+
+  /** Выбранный пользователь должен перевести второму (кнопка «Закрыть период» активна). */
+  const selectedUserOwesOther =
+    Boolean(currentPeriodStart) &&
+    (payer === 'sasha'
+      ? spentForCurrentPeriod.realSasha < spentForCurrentPeriod.onSasha
+      : payer === 'max'
+        ? spentForCurrentPeriod.realMax < spentForCurrentPeriod.onMax
+        : false)
+
+  const closingPeriodPrompt =
+    payer === 'sasha'
+      ? spentForCurrentPeriod.realSasha < spentForCurrentPeriod.onSasha
+        ? `Чтобы закрыть период, переведи ${formatMoney(closingPeriodGapSasha)} руб`
+        : spentForCurrentPeriod.realSasha > spentForCurrentPeriod.onSasha
+          ? `Чтобы закрыть период, дождись перевода ${formatMoney(closingPeriodGapSasha)} руб`
+          : null
+      : payer === 'max'
+        ? spentForCurrentPeriod.realMax < spentForCurrentPeriod.onMax
+          ? `Чтобы закрыть период, переведи ${formatMoney(closingPeriodGapMax)} руб`
+          : spentForCurrentPeriod.realMax > spentForCurrentPeriod.onMax
+            ? `Чтобы закрыть период, дождись перевода ${formatMoney(closingPeriodGapMax)} руб`
+            : null
+        : null
 
   return (
     <div className="p-5 h-dvh flex flex-col">
@@ -91,16 +142,49 @@ export const HomePage = ({ payer, setPayer, transactions }: HomePageProps) => {
         </div>
         <div className="w-full md:w-1/2 mb-5 mx-auto">
           <Button
-            severity="secondary"
+            severity="info"
             label="Транзакции"
             onClick={() => navigate('/transactions')}
             className="w-full  mt-2"
           />
         </div>
-        <div>
-          <div>Потратили за текущий период</div>
-          <div>Саша: {formatMoney(spentForCurrentPeriod.onSasha)}</div>
-          <div>Макс: {formatMoney(spentForCurrentPeriod.onMax)}</div>
+        <div className="w-full md:w-1/2 mb-5 mx-auto space-y-1">
+          {payer === 'sasha' && (
+            <>
+              <div>Саша взяла на себя: {formatMoney(spentForCurrentPeriod.onSasha)}</div>
+              <div>Саша реально потратила: {formatMoney(spentForCurrentPeriod.realSasha)}</div>
+              {closingPeriodPrompt && <div>{closingPeriodPrompt}</div>}
+            </>
+          )}
+          {payer === 'max' && (
+            <>
+              <div>Макс взял на себя: {formatMoney(spentForCurrentPeriod.onMax)}</div>
+              <div>Макс реально потратил: {formatMoney(spentForCurrentPeriod.realMax)}</div>
+              {closingPeriodPrompt && <div>{closingPeriodPrompt}</div>}
+            </>
+          )}
+          <div>Начало периода: {formatPeriodStartDate(currentPeriodStart)}</div>
+        </div>
+        <div className="w-full md:w-1/2 mb-5 mx-auto">
+          <Button
+            severity="warning"
+            label="Закрыть период"
+            disabled={!selectedUserOwesOther}
+            onClick={() =>
+              navigate('/close-period', {
+                state: {
+                  amount:
+                    payer === 'sasha'
+                      ? closingPeriodGapSasha
+                      : payer === 'max'
+                        ? closingPeriodGapMax
+                        : 0,
+                  trackingStartDate: currentPeriodStart,
+                },
+              })
+            }
+            className="w-full  mt-2"
+          />
         </div>
       </div>
       <div className="w-full md:w-1/2 mt-20 mb-5 mx-auto">
