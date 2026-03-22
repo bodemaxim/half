@@ -278,7 +278,7 @@ export const EditPage = ({
               payment_date: paymentDate.toISOString(),
               payer,
               amount,
-              type: 'purchase',
+              type: mode === 'close_period' ? 'transfer' : 'purchase',
               on_max: resolvedOnMax,
               on_sasha: resolvedOnSasha,
               category: 'unknown',
