@@ -7,7 +7,7 @@ import { InputTextarea } from 'primereact/inputtextarea'
 import { Slider } from 'primereact/slider'
 import { useNavigate } from 'react-router-dom'
 import { Temporal } from '@js-temporal/polyfill'
-import { createTransaction } from '../../api'
+import { createTransaction, updateTransaction } from '../../api'
 import type { Transaction } from '../../api/types'
 
 type EditPageProps = {
@@ -16,6 +16,9 @@ type EditPageProps = {
   trackingStartDate?: Transaction['tracking_start_date']
   /** Предзаполнение суммы (режим «Закрыть период») */
   defaultAmount?: number
+  /** Редактируемая запись (режим edit) */
+  transaction?: Transaction
+  onTransactionUpdated?: (t: Transaction) => void
 }
 
 export const EditPage = ({
@@ -23,6 +26,8 @@ export const EditPage = ({
   payer,
   trackingStartDate,
   defaultAmount,
+  transaction,
+  onTransactionUpdated,
 }: EditPageProps) => {
   const navigate = useNavigate()
   const [paymentDate, setPaymentDate] = useState<Date | null>(
@@ -41,6 +46,22 @@ export const EditPage = ({
   const [sharePercent, setSharePercent] = useState<number>(50)
 
   useEffect(() => {
+    if (mode !== 'edit' || !transaction) return
+    setPaymentDate(new Date(transaction.payment_date))
+    setAmount(transaction.amount)
+    setDescription(transaction.description)
+    setOnMax(transaction.on_max)
+    setOnSasha(transaction.on_sasha)
+    const sp =
+      transaction.amount === 0
+        ? 0
+        : (transaction.on_max / transaction.amount) * 100
+    setSharePercent(sp)
+  }, [mode, transaction])
+
+  useEffect(() => {
+    if (mode === 'edit' && amount === null) return
+
     if (mode === 'close_period') {
       if (amount === null || !payer) {
         setOnMax(null)
@@ -89,7 +110,9 @@ export const EditPage = ({
           rounded
           text
           aria-label="Назад"
-          onClick={() => navigate('/home')}
+          onClick={() =>
+            navigate(mode === 'edit' ? '/transactions' : '/home')
+          }
         />
       </div>
 
@@ -234,6 +257,38 @@ export const EditPage = ({
           label="Сохранить"
           severity="success"
           onClick={async () => {
+            if (mode === 'edit' && transaction) {
+              if (!paymentDate || amount === null) {
+                alert('Заполните дату и сумму')
+
+                return
+              }
+              if (onMax === null || onSasha === null) {
+                alert('Заполните доли')
+
+                return
+              }
+
+              const updated = await updateTransaction(transaction.id, {
+                payment_date: paymentDate.toISOString(),
+                payer: transaction.payer,
+                amount,
+                type: transaction.type,
+                on_max: onMax,
+                on_sasha: onSasha,
+                category: transaction.category,
+                tracking_start_date: transaction.tracking_start_date,
+                description,
+              })
+
+              if (updated) {
+                onTransactionUpdated?.(updated)
+                navigate('/transactions')
+              }
+
+              return
+            }
+
             if (!paymentDate || amount === null || !payer) {
               alert(
                 'Заполните сумму и выберите пользователя на главной странице',

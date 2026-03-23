@@ -1,12 +1,47 @@
-import { useEffect, useState } from 'react'
-import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { type Dispatch, type SetStateAction, useEffect, useState } from 'react'
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useParams,
+} from 'react-router-dom'
 import './App.css'
-import { getTransactions } from './api'
+import { deleteTransaction, getTransactions } from './api'
 import type { Transaction } from './api/types'
 import { TransactionsPage } from './pages/transactions-page/transactions-page'
 import { HomePage } from './pages/home-page/home-page'
 import { LoginPage } from './pages/login-page/login-page'
 import { EditPage } from './pages/edit-page/edit-page'
+
+function EditTransactionPage({
+  transactions,
+  setTransactions,
+}: {
+  transactions: Transaction[]
+  setTransactions: Dispatch<SetStateAction<Transaction[]>>
+}) {
+  const { id } = useParams<{ id: string }>()
+  const transaction = transactions.find((t) => t.id === id)
+  if (!transaction) {
+    return <Navigate to="/transactions" replace />
+  }
+
+  return (
+    <EditPage
+      mode="edit"
+      transaction={transaction}
+      payer={transaction.payer}
+      trackingStartDate={transaction.tracking_start_date}
+      onTransactionUpdated={(updated) => {
+        setTransactions((prev) =>
+          prev.map((t) => (t.id === updated.id ? updated : t)),
+        )
+      }}
+    />
+  )
+}
 
 function ClosePeriodPage({
   payer,
@@ -62,6 +97,14 @@ function AppInner() {
     }
   }, [])
 
+  const handleDeleteTransaction = async (id: Transaction['id']) => {
+    const ok = await deleteTransaction(id)
+    if (ok) {
+      setTransactions((prev) => prev.filter((t) => t.id !== id))
+    }
+    return ok
+  }
+
   return (
     <>
       <Routes>
@@ -91,7 +134,21 @@ function AppInner() {
         />
         <Route
           path="/transactions"
-          element={<TransactionsPage transactions={transactions} />}
+          element={
+            <TransactionsPage
+              transactions={transactions}
+              onDeleteTransaction={handleDeleteTransaction}
+            />
+          }
+        />
+        <Route
+          path="/edit/:id"
+          element={
+            <EditTransactionPage
+              transactions={transactions}
+              setTransactions={setTransactions}
+            />
+          }
         />
       </Routes>
     </>
