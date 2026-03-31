@@ -15,6 +15,25 @@ import { HomePage } from './pages/home-page/home-page'
 import { LoginPage } from './pages/login-page/login-page'
 import { EditPage } from './pages/edit-page/edit-page'
 
+function getNewestTrackingStartDate(
+  transactions: Transaction[],
+): Transaction['tracking_start_date'] | undefined {
+  let newest: string | undefined
+  let newestMs = -Infinity
+
+  for (const t of transactions) {
+    if (typeof t.tracking_start_date !== 'string') continue
+    const ms = new Date(t.tracking_start_date).getTime()
+    if (Number.isNaN(ms)) continue
+    if (ms > newestMs) {
+      newestMs = ms
+      newest = t.tracking_start_date
+    }
+  }
+
+  return newest
+}
+
 function EditTransactionPage({
   transactions,
   setTransactions,
@@ -120,11 +139,7 @@ function AppInner() {
             <EditPage
               mode="new"
               payer={payer}
-              trackingStartDate={
-                transactions.length > 0
-                  ? transactions[transactions.length - 1].tracking_start_date
-                  : undefined
-              }
+              trackingStartDate={getNewestTrackingStartDate(transactions)}
             />
           }
         />
