@@ -130,6 +130,9 @@ export const TransactionsPage = ({
         selection={selected}
         onSelectionChange={(e) => setSelected(e.value as Transaction | null)}
         metaKeySelection={false}
+        rowClassName={(rowData: Transaction) =>
+          String(rowData.type).toLowerCase() === 'transfer' ? '!bg-green-300' : ''
+        }
         stripedRows
         showGridlines
         scrollable={isMobile}
