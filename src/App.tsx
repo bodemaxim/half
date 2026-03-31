@@ -65,9 +65,11 @@ function EditTransactionPage({
 function ClosePeriodPage({
   payer,
   transactions,
+  onTransactionCreated,
 }: {
   payer: Transaction['payer'] | null
   transactions: Transaction[]
+  onTransactionCreated?: (t: Transaction) => void
 }) {
   const location = useLocation()
   const state = location.state as
@@ -87,6 +89,7 @@ function ClosePeriodPage({
       payer={payer}
       trackingStartDate={trackingStartDate}
       defaultAmount={state?.amount}
+      onTransactionCreated={onTransactionCreated}
     />
   )
 }
@@ -96,14 +99,18 @@ function AppInner() {
   const [payer, setPayer] = useState<Transaction['payer'] | null>(null)
   const selectedUserStorageKey = 'half_selected_user'
 
+  const reloadTransactions = async () => {
+    try {
+      const data = await getTransactions()
+      setTransactions(data)
+    } catch (e) {
+      console.error('getTransactions failed:', e)
+    }
+  }
+
   useEffect(() => {
     const load = async () => {
-      try {
-        const data = await getTransactions()
-        setTransactions(data)
-      } catch (e) {
-        console.error('getTransactions failed:', e)
-      }
+      await reloadTransactions()
     }
 
     void load()
@@ -140,12 +147,23 @@ function AppInner() {
               mode="new"
               payer={payer}
               trackingStartDate={getNewestTrackingStartDate(transactions)}
+              onTransactionCreated={() => {
+                void reloadTransactions()
+              }}
             />
           }
         />
         <Route
           path="/close-period"
-          element={<ClosePeriodPage payer={payer} transactions={transactions} />}
+          element={
+            <ClosePeriodPage
+              payer={payer}
+              transactions={transactions}
+              onTransactionCreated={() => {
+                void reloadTransactions()
+              }}
+            />
+          }
         />
         <Route
           path="/transactions"

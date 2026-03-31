@@ -19,6 +19,7 @@ type EditPageProps = {
   /** Редактируемая запись (режим edit) */
   transaction?: Transaction
   onTransactionUpdated?: (t: Transaction) => void
+  onTransactionCreated?: (t: Transaction) => void
 }
 
 export const EditPage = ({
@@ -28,6 +29,7 @@ export const EditPage = ({
   defaultAmount,
   transaction,
   onTransactionUpdated,
+  onTransactionCreated,
 }: EditPageProps) => {
   const navigate = useNavigate()
   const [paymentDate, setPaymentDate] = useState<Date | null>(
@@ -344,6 +346,7 @@ export const EditPage = ({
             const created = await createTransaction(payload)
 
             if (created) {
+              onTransactionCreated?.(created)
               navigate('/home')
             }
           }}
