@@ -1,11 +1,20 @@
 import type { TransactionsPageProps } from './transactions-page.types'
 import type { Transaction } from '../../api/types'
+import { enumConfig } from '../../api/consts'
 import { DataTable } from 'primereact/datatable'
 import { Column } from 'primereact/column'
 import { Button } from 'primereact/button'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Temporal } from '@js-temporal/polyfill'
+
+const categoryLabelByValue = new Map<string, string>(
+  enumConfig.categories.map((c) => [c.value, c.label]),
+)
+
+function categoryLabel(category: string): string {
+  return categoryLabelByValue.get(category) ?? category
+}
 
 export const TransactionsPage = ({
   transactions,
@@ -62,7 +71,7 @@ export const TransactionsPage = ({
       <li><strong>Сумма:</strong> {t.amount}</li>
       <li><strong>На Максе:</strong> {t.on_max}</li>
       <li><strong>На Саше:</strong> {t.on_sasha}</li>
-      <li><strong>Категория:</strong> {t.category}</li>
+      <li><strong>Категория:</strong> {categoryLabel(t.category)}</li>
       <li><strong>Описание:</strong> {t.description}</li>
       <li><strong>Дата старта:</strong> {formatDateTime(t.tracking_start_date)}</li>
     </ul>
@@ -153,7 +162,14 @@ export const TransactionsPage = ({
         {!isMobile && <Column field="amount" header="Сумма" sortable />}
         {!isMobile && <Column field="on_max" header="На Максе" sortable />}
         {!isMobile && <Column field="on_sasha" header="На Саше" sortable />}
-        {!isMobile && <Column field="category" header="Категория" sortable />}
+        {!isMobile && (
+          <Column
+            field="category"
+            header="Категория"
+            sortable
+            body={(rowData) => categoryLabel(rowData.category)}
+          />
+        )}
         {!isMobile && <Column field="description" header="Описание" />}
         {!isMobile && (
           <Column

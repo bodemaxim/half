@@ -1,3 +1,5 @@
+import type { enumConfig } from "./consts"
+
 export type Transaction = {
     id: string
     created_at: string
@@ -11,3 +13,5 @@ export type Transaction = {
     tracking_start_date: string
     description: string
 }
+
+export type Category = typeof enumConfig.categories[number]['value'];

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Button } from 'primereact/button'
 import { Calendar } from 'primereact/calendar'
+import { Dropdown } from 'primereact/dropdown'
 import { InputNumber } from 'primereact/inputnumber'
 import { FloatLabel } from 'primereact/floatlabel'
 import { InputTextarea } from 'primereact/inputtextarea'
@@ -8,7 +9,23 @@ import { Slider } from 'primereact/slider'
 import { useNavigate } from 'react-router-dom'
 import { Temporal } from '@js-temporal/polyfill'
 import { createTransaction, updateTransaction } from '../../api'
+import { enumConfig } from '../../api/consts'
 import type { Transaction } from '../../api/types'
+
+type CategoryOption = (typeof enumConfig.categories)[number]
+
+const categoryOptions: CategoryOption[] = [...enumConfig.categories]
+
+const selectedCategoryTemplate = (option: CategoryOption | null) =>
+  option ? (
+    <span>{option.label}</span>
+  ) : (
+    <span className="text-neutral-500">Выберите категорию</span>
+  )
+
+const categoryOptionTemplate = (option: CategoryOption) => (
+  <span>{option.label}</span>
+)
 
 type EditPageProps = {
   mode: 'new' | 'edit' | 'close_period'
@@ -46,6 +63,7 @@ export const EditPage = ({
   const [onMax, setOnMax] = useState<number | null>(null)
   const [onSasha, setOnSasha] = useState<number | null>(null)
   const [sharePercent, setSharePercent] = useState<number>(50)
+  const [category, setCategory] = useState<string>('other')
 
   useEffect(() => {
     if (mode !== 'edit' || !transaction) return
@@ -54,6 +72,11 @@ export const EditPage = ({
     setDescription(transaction.description)
     setOnMax(transaction.on_max)
     setOnSasha(transaction.on_sasha)
+    setCategory(
+      enumConfig.categories.some((c) => c.value === transaction.category)
+        ? transaction.category
+        : 'other',
+    )
     const sp =
       transaction.amount === 0
         ? 0
@@ -254,6 +277,29 @@ export const EditPage = ({
           <label htmlFor="description">Описание</label>
         </FloatLabel>
 
+        {mode !== 'close_period' && (
+          <FloatLabel className="w-full mt-10">
+            <Dropdown
+              id="category"
+              value={category}
+              onChange={(e) => setCategory(e.value as string)}
+              options={categoryOptions}
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Выберите категорию"
+              filter
+              filterBy="label"
+              filterPlaceholder="Поиск"
+              valueTemplate={selectedCategoryTemplate}
+              itemTemplate={categoryOptionTemplate}
+              className="w-full"
+              appendTo="self"
+              panelStyle={{ width: '100%' }}
+            />
+            <label htmlFor="category">Категория</label>
+          </FloatLabel>
+        )}
+
         <Button
           className="w-full mt-6"
           label="Сохранить"
@@ -278,7 +324,7 @@ export const EditPage = ({
                 type: transaction.type,
                 on_max: onMax,
                 on_sasha: onSasha,
-                category: transaction.category,
+                category,
                 tracking_start_date: transaction.tracking_start_date,
                 description,
               })
@@ -338,7 +384,7 @@ export const EditPage = ({
               type: mode === 'close_period' ? 'transfer' : 'purchase',
               on_max: resolvedOnMax,
               on_sasha: resolvedOnSasha,
-              category: 'unknown',
+              category: mode === 'close_period' ? 'close_period' : category,
               tracking_start_date: resolvedTrackingStart,
               description,
             }
