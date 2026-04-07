@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Button } from 'primereact/button'
 import { Calendar } from 'primereact/calendar'
-import { Dropdown } from 'primereact/dropdown'
+import { Checkbox } from 'primereact/checkbox'
 import { InputNumber } from 'primereact/inputnumber'
 import { FloatLabel } from 'primereact/floatlabel'
 import { Panel } from 'primereact/panel'
@@ -57,6 +57,8 @@ export const EditPage = ({
   const [selectedCategories, setSelectedCategories] = useState<string[]>([
     'other',
   ])
+  const [allowMultipleCategoryTags, setAllowMultipleCategoryTags] =
+    useState(false)
 
   useEffect(() => {
     if (mode !== 'edit' || !transaction) return
@@ -70,6 +72,7 @@ export const EditPage = ({
         ? [transaction.category]
         : ['other'],
     )
+    setAllowMultipleCategoryTags(false)
     const sp =
       transaction.amount === 0
         ? 0
@@ -115,7 +118,7 @@ export const EditPage = ({
 
   return (
     <div className="p-5">
-      <div className="flex-b">
+      <div className="flex-b w-full md:w-1/2 mx-auto ">
         <h1 className="text-3xl font-bold my-5">
           {mode === 'close_period'
             ? 'Закрыть период'
@@ -131,6 +134,7 @@ export const EditPage = ({
           onClick={() =>
             navigate(mode === 'edit' ? '/transactions' : '/home')
           }
+          className="transform translate-x-[16px]"
         />
       </div>
 
@@ -282,11 +286,21 @@ export const EditPage = ({
                       key={tag.value}
                       type="button"
                       onClick={() => {
-                        setSelectedCategories((prev) =>
-                          prev.includes(tag.value)
-                            ? prev.filter((v) => v !== tag.value)
-                            : [...prev, tag.value],
-                        )
+                        if (allowMultipleCategoryTags) {
+                          setSelectedCategories((prev) =>
+                            prev.includes(tag.value)
+                              ? prev.filter((v) => v !== tag.value)
+                              : [...prev, tag.value],
+                          )
+                        } else {
+                          setSelectedCategories((prev) => {
+                            if (prev.length === 1 && prev[0] === tag.value) {
+                              return []
+                            }
+
+                            return [tag.value]
+                          })
+                        }
                       }}
                       aria-pressed={selected}
                       className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
@@ -300,7 +314,36 @@ export const EditPage = ({
                   )
                 })}
               </div>
-              
+
+              <div className="flex items-center gap-2 pt-1">
+                <Checkbox
+                  inputId="allow_multiple_category_tags"
+                  checked={allowMultipleCategoryTags}
+                  onChange={(e) => {
+                    const checked = e.checked ?? false
+                    setAllowMultipleCategoryTags(checked)
+                    if (!checked) {
+                      setSelectedCategories((prev) => {
+                        if (prev.length > 1) {
+                          return [prev[0]]
+                        }
+
+                        if (prev.length === 0) {
+                          return ['other']
+                        }
+
+                        return prev
+                      })
+                    }
+                  }}
+                />
+                <label
+                  htmlFor="allow_multiple_category_tags"
+                  className="cursor-pointer select-none text-sm text-neutral-800"
+                >
+                  Выбрать несколько
+                </label>
+              </div>
             </div>
           </Panel>
         )}
