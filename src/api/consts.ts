@@ -22,7 +22,8 @@ export const enumConfig = {
       { value: 'household_items', label: 'Товары для дома' },
       { value: 'gifts', label: 'Подарки'},
       { value: 'construction_materials', label: 'Стройматериалы' },
-      { value: 'stationery', label: 'Канцелярия' },
+      { value: 'biils', label: 'Счета за дом' },
+      { value: 'stationery', label: 'Канцтовары' },
       { value: 'close_period', label: 'Закрытие периода' },
       { value: 'other', label: 'Другое' },
       {value: 'unknown', label: 'Неизвестно'}
