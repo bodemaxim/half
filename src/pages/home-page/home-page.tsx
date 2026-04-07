@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from 'primereact/button'
 import { Dropdown } from 'primereact/dropdown'
 import { FloatLabel } from 'primereact/floatlabel'
+import { enumConfig } from '../../api/consts'
 import type { Transaction } from '../../api/types'
 
 type HomePageProps = {
@@ -17,15 +18,10 @@ export const HomePage = ({ payer, setPayer, transactions }: HomePageProps) => {
   const navigate = useNavigate()
   const selectedUserStorageKey = 'half_selected_user'
 
-  const userOptions = [
-    { label: 'Макс', value: 'max' },
-    { label: 'Саша', value: 'sasha' },
-  ]
-
   useEffect(() => {
     const savedUser = localStorage.getItem(selectedUserStorageKey)
 
-    if (savedUser && userOptions.some((option) => option.value === savedUser)) {
+    if (savedUser && enumConfig.users.some((option) => option.value === savedUser)) {
       setPayer(savedUser as Transaction['payer'])
     }
   }, [setPayer])
@@ -105,6 +101,11 @@ export const HomePage = ({ payer, setPayer, transactions }: HomePageProps) => {
         ? spentForCurrentPeriod.realMax < spentForCurrentPeriod.onMax
         : false)
 
+  const payerLabel =
+    payer === null
+      ? ''
+      : enumConfig.users.find((u) => u.value === payer)?.label ?? payer
+
   const closingPeriodPrompt =
     payer === 'sasha'
       ? spentForCurrentPeriod.realSasha < spentForCurrentPeriod.onSasha
@@ -123,7 +124,7 @@ export const HomePage = ({ payer, setPayer, transactions }: HomePageProps) => {
   return (
     <div className="p-5 h-dvh flex flex-col">
       <div className="flex-1">
-        <h1 className="text-3xl font-bold my-5 text-center mb-10">{payer}</h1>
+        <h1 className="text-3xl font-bold my-5 text-center mb-10">{payerLabel}</h1>
         <div className="w-full md:w-1/2 mb-5 mx-auto">
           <Button
             severity="success"
@@ -196,7 +197,7 @@ export const HomePage = ({ payer, setPayer, transactions }: HomePageProps) => {
               setPayer(e.value as Transaction['payer'])
               localStorage.setItem(selectedUserStorageKey, e.value)
             }}
-            options={userOptions}
+            options={[...enumConfig.users]}
             placeholder="Выберите пользователя"
             className="w-full"
           />

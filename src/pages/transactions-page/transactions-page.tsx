@@ -11,9 +11,23 @@ import { Temporal } from '@js-temporal/polyfill'
 const categoryLabelByValue = new Map<string, string>(
   enumConfig.categories.map((c) => [c.value, c.label]),
 )
+const userLabelByValue = new Map<string, string>(
+  enumConfig.users.map((u) => [u.value, u.label]),
+)
+const transactionTypeLabelByValue = new Map<string, string>(
+  enumConfig.transactionTypes.map((t) => [t.value, t.label]),
+)
 
 function categoryLabel(category: string): string {
   return categoryLabelByValue.get(category) ?? category
+}
+
+function userLabel(payer: string): string {
+  return userLabelByValue.get(payer) ?? payer
+}
+
+function transactionTypeLabel(type: string): string {
+  return transactionTypeLabelByValue.get(type) ?? type
 }
 
 export const TransactionsPage = ({
@@ -66,8 +80,8 @@ export const TransactionsPage = ({
 
   const renderMobileData = (t: (typeof transactions)[number]) => (
     <ul className="m-0 p-0 list-none text-sm space-y-1">
-      <li><strong>Плательщик:</strong> {t.payer}</li>
-      <li><strong>Тип:</strong> {t.type}</li>
+      <li><strong>Плательщик:</strong> {userLabel(t.payer)}</li>
+      <li><strong>Тип:</strong> {transactionTypeLabel(t.type)}</li>
       <li><strong>Сумма:</strong> {t.amount}</li>
       <li><strong>На Максе:</strong> {t.on_max}</li>
       <li><strong>На Саше:</strong> {t.on_sasha}</li>
@@ -157,8 +171,22 @@ export const TransactionsPage = ({
 
         {isMobile && <Column header="Данные" body={renderMobileData} />}
         
-        {!isMobile && <Column field="payer" header="Плательщик" sortable />}
-        {!isMobile && <Column field="type" header="Тип" sortable />}
+        {!isMobile && (
+          <Column
+            field="payer"
+            header="Плательщик"
+            sortable
+            body={(rowData) => userLabel(rowData.payer)}
+          />
+        )}
+        {!isMobile && (
+          <Column
+            field="type"
+            header="Тип"
+            sortable
+            body={(rowData) => transactionTypeLabel(rowData.type)}
+          />
+        )}
         {!isMobile && <Column field="amount" header="Сумма" sortable />}
         {!isMobile && <Column field="on_max" header="На Максе" sortable />}
         {!isMobile && <Column field="on_sasha" header="На Саше" sortable />}

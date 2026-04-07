@@ -1,4 +1,8 @@
 export const enumConfig = {
+    users: [
+      { value: 'sasha', label: 'Саша' },
+      { value: 'max', label: 'Макс' },
+    ],
     categories: [
       { value: 'supermarket', label: 'Супермаркет' },
       { value: 'food_delivery', label: 'Доставка еды' },
@@ -22,5 +26,9 @@ export const enumConfig = {
       { value: 'close_period', label: 'Закрытие периода' },
       { value: 'other', label: 'Другое' },
       {value: 'unknown', label: 'Неизвестно'}
+    ],
+    transactionTypes: [
+      { value: 'purchase', label: 'Покупка' },
+      { value: 'transfer', label: 'Перевод' },
     ],
 } as const;
