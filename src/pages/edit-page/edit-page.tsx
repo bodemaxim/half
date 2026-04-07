@@ -4,6 +4,7 @@ import { Calendar } from 'primereact/calendar'
 import { Dropdown } from 'primereact/dropdown'
 import { InputNumber } from 'primereact/inputnumber'
 import { FloatLabel } from 'primereact/floatlabel'
+import { Panel } from 'primereact/panel'
 import { InputTextarea } from 'primereact/inputtextarea'
 import { Slider } from 'primereact/slider'
 import { useNavigate } from 'react-router-dom'
@@ -16,16 +17,6 @@ type CategoryOption = (typeof enumConfig.categories)[number]
 
 const categoryOptions: CategoryOption[] = [...enumConfig.categories]
 
-const selectedCategoryTemplate = (option: CategoryOption | null) =>
-  option ? (
-    <span>{option.label}</span>
-  ) : (
-    <span className="text-neutral-500">Выберите категорию</span>
-  )
-
-const categoryOptionTemplate = (option: CategoryOption) => (
-  <span>{option.label}</span>
-)
 
 type EditPageProps = {
   mode: 'new' | 'edit' | 'close_period'
@@ -63,7 +54,9 @@ export const EditPage = ({
   const [onMax, setOnMax] = useState<number | null>(null)
   const [onSasha, setOnSasha] = useState<number | null>(null)
   const [sharePercent, setSharePercent] = useState<number>(50)
-  const [category, setCategory] = useState<string>('other')
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([
+    'other',
+  ])
 
   useEffect(() => {
     if (mode !== 'edit' || !transaction) return
@@ -72,10 +65,10 @@ export const EditPage = ({
     setDescription(transaction.description)
     setOnMax(transaction.on_max)
     setOnSasha(transaction.on_sasha)
-    setCategory(
+    setSelectedCategories(
       enumConfig.categories.some((c) => c.value === transaction.category)
-        ? transaction.category
-        : 'other',
+        ? [transaction.category]
+        : ['other'],
     )
     const sp =
       transaction.amount === 0
@@ -278,32 +271,47 @@ export const EditPage = ({
         </FloatLabel>
 
         {mode !== 'close_period' && (
-          <FloatLabel className="w-full mt-10">
-            <Dropdown
-              id="category"
-              value={category}
-              onChange={(e) => setCategory(e.value as string)}
-              options={categoryOptions}
-              optionLabel="label"
-              optionValue="value"
-              placeholder="Выберите категорию"
-              filter
-              filterBy="label"
-              filterPlaceholder="Поиск"
-              valueTemplate={selectedCategoryTemplate}
-              itemTemplate={categoryOptionTemplate}
-              className="w-full"
-              appendTo="self"
-              panelStyle={{ width: '100%' }}
-            />
-            <label htmlFor="category">Категория</label>
-          </FloatLabel>
+          <Panel header="Категория" className="w-full mt-10">
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap gap-2">
+                {categoryOptions.map((tag) => {
+                  const selected = selectedCategories.includes(tag.value)
+
+                  return (
+                    <button
+                      key={tag.value}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCategories((prev) =>
+                          prev.includes(tag.value)
+                            ? prev.filter((v) => v !== tag.value)
+                            : [...prev, tag.value],
+                        )
+                      }}
+                      aria-pressed={selected}
+                      className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                        selected
+                          ? 'border-green-600 bg-green-50 text-green-900'
+                          : 'border-neutral-300 bg-neutral-50 text-neutral-800 hover:bg-neutral-100'
+                      }`}
+                    >
+                      {tag.label}
+                    </button>
+                  )
+                })}
+              </div>
+              
+            </div>
+          </Panel>
         )}
 
         <Button
           className="w-full mt-6"
           label="Сохранить"
           severity="success"
+          disabled={
+            mode !== 'close_period' && selectedCategories.length !== 1
+          }
           onClick={async () => {
             if (mode === 'edit' && transaction) {
               if (!paymentDate || amount === null) {
@@ -324,7 +332,7 @@ export const EditPage = ({
                 type: transaction.type,
                 on_max: onMax,
                 on_sasha: onSasha,
-                category,
+                category: selectedCategories[0],
                 tracking_start_date: transaction.tracking_start_date,
                 description,
               })
@@ -384,7 +392,8 @@ export const EditPage = ({
               type: mode === 'close_period' ? 'transfer' : 'purchase',
               on_max: resolvedOnMax,
               on_sasha: resolvedOnSasha,
-              category: mode === 'close_period' ? 'close_period' : category,
+              category:
+                mode === 'close_period' ? 'close_period' : selectedCategories[0],
               tracking_start_date: resolvedTrackingStart,
               description,
             }
