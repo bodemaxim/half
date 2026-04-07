@@ -59,6 +59,21 @@ export const EditPage = ({
   ])
   const [allowMultipleCategoryTags, setAllowMultipleCategoryTags] =
     useState(false)
+  const maxVsSashaDiff = (onMax ?? 0) - (onSasha ?? 0)
+  const sashaVsMaxDiff = (onSasha ?? 0) - (onMax ?? 0)
+  const formatDiffRub = (value: number) => {
+    const rounded = Math.round(value)
+
+    if (rounded > 0) {
+      return `+${rounded} руб`
+    }
+
+    if (rounded < 0) {
+      return `${rounded} руб`
+    }
+
+    return '0 руб'
+  }
 
   useEffect(() => {
     if (mode !== 'edit' || !transaction) return
@@ -166,115 +181,6 @@ export const EditPage = ({
         </FloatLabel>
 
         {mode !== 'close_period' && (
-          <>
-            <div className="w-full flex-b mt-10 gap-4">
-              <div className="flex-1 max-w-[calc(50%-8px)]">
-                <FloatLabel className="flex-1">
-                  <InputNumber
-                    inputId="on_max"
-                    value={onMax}
-                    onValueChange={(e) => {
-                      const newOnMax = e.value ?? null
-                      setOnMax(newOnMax)
-
-                      if (amount !== null && newOnMax !== null) {
-                        const newOnSasha = amount - newOnMax
-                        setOnSasha(newOnSasha)
-
-                        const ratio = amount === 0 ? 0 : (newOnMax / amount) * 100
-                        setSharePercent(ratio)
-                      }
-                    }}
-                    mode="decimal"
-                    minFractionDigits={0}
-                    maxFractionDigits={0}
-                    className="w-full"
-                    pt={{
-                      input: {
-                        root: {
-                          style: { minWidth: '40px' },
-                        },
-                      },
-                    }}
-                  />
-                  <label htmlFor="on_max">
-                    На Максе ({Math.round(sharePercent)}%)
-                  </label>
-                </FloatLabel>
-              </div>
-
-              <div className="flex-1 max-w-[calc(50%-8px)]">
-                <FloatLabel className="flex-1">
-                  <InputNumber
-                    inputId="on_sasha"
-                    value={onSasha}
-                    onValueChange={(e) => {
-                      const newOnSasha = e.value ?? null
-                      setOnSasha(newOnSasha)
-
-                      if (amount !== null && newOnSasha !== null) {
-                        const newOnMax = amount - newOnSasha
-                        setOnMax(newOnMax)
-
-                        const ratio = amount === 0 ? 0 : (newOnMax / amount) * 100
-                        setSharePercent(ratio)
-                      }
-                    }}
-                    mode="decimal"
-                    minFractionDigits={0}
-                    maxFractionDigits={0}
-                    className="w-full"
-                    pt={{
-                      input: {
-                        root: {
-                          style: { minWidth: '40px' },
-                        },
-                      },
-                    }}
-                  />
-                  <label htmlFor="on_sasha">
-                    На Саше ({Math.round(100 - sharePercent)}%)
-                  </label>
-                </FloatLabel>
-              </div>
-            </div>
-
-            <div className="w-full mt-4">
-              <Slider
-                value={sharePercent}
-                onChange={(e) => {
-                  const value = (e.value as number) ?? 0
-                  setSharePercent(value)
-
-                  if (amount !== null) {
-                    const ratio = value / 100
-                    const maxPart = amount * ratio
-                    const sashaPart = amount - maxPart
-                    setOnMax(maxPart)
-                    setOnSasha(sashaPart)
-                  }
-                }}
-                min={0}
-                max={100}
-                className="w-full"
-              />
-            </div>
-          </>
-        )}
-
-        <FloatLabel className="w-full mt-10">
-          <InputTextarea
-            id="description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={4}
-            autoResize
-            className="w-full"
-          />
-          <label htmlFor="description">Описание</label>
-        </FloatLabel>
-
-        {mode !== 'close_period' && (
           <Panel header="Категория" className="w-full mt-10">
             <div className="flex flex-col gap-3">
               <div className="flex flex-wrap gap-2">
@@ -347,6 +253,115 @@ export const EditPage = ({
             </div>
           </Panel>
         )}
+
+        {mode !== 'close_period' && (
+          <>
+            <div className="w-full flex-b mt-10 gap-4">
+              <div className="flex-1 max-w-[calc(50%-8px)]">
+                <FloatLabel className="flex-1">
+                  <InputNumber
+                    inputId="on_max"
+                    value={onMax}
+                    onValueChange={(e) => {
+                      const newOnMax = e.value ?? null
+                      setOnMax(newOnMax)
+
+                      if (amount !== null && newOnMax !== null) {
+                        const newOnSasha = amount - newOnMax
+                        setOnSasha(newOnSasha)
+
+                        const ratio = amount === 0 ? 0 : (newOnMax / amount) * 100
+                        setSharePercent(ratio)
+                      }
+                    }}
+                    mode="decimal"
+                    minFractionDigits={0}
+                    maxFractionDigits={0}
+                    className="w-full"
+                    pt={{
+                      input: {
+                        root: {
+                          style: { minWidth: '40px' },
+                        },
+                      },
+                    }}
+                  />
+                  <label htmlFor="on_max">
+                    На Максе ({Math.round(sharePercent)}%, {formatDiffRub(maxVsSashaDiff)})
+                  </label>
+                </FloatLabel>
+              </div>
+
+              <div className="flex-1 max-w-[calc(50%-8px)]">
+                <FloatLabel className="flex-1">
+                  <InputNumber
+                    inputId="on_sasha"
+                    value={onSasha}
+                    onValueChange={(e) => {
+                      const newOnSasha = e.value ?? null
+                      setOnSasha(newOnSasha)
+
+                      if (amount !== null && newOnSasha !== null) {
+                        const newOnMax = amount - newOnSasha
+                        setOnMax(newOnMax)
+
+                        const ratio = amount === 0 ? 0 : (newOnMax / amount) * 100
+                        setSharePercent(ratio)
+                      }
+                    }}
+                    mode="decimal"
+                    minFractionDigits={0}
+                    maxFractionDigits={0}
+                    className="w-full"
+                    pt={{
+                      input: {
+                        root: {
+                          style: { minWidth: '40px' },
+                        },
+                      },
+                    }}
+                  />
+                  <label htmlFor="on_sasha">
+                    На Саше ({Math.round(100 - sharePercent)}%, {formatDiffRub(sashaVsMaxDiff)})
+                  </label>
+                </FloatLabel>
+              </div>
+            </div>
+
+            <div className="w-full mt-4">
+              <Slider
+                value={sharePercent}
+                onChange={(e) => {
+                  const value = (e.value as number) ?? 0
+                  setSharePercent(value)
+
+                  if (amount !== null) {
+                    const ratio = value / 100
+                    const maxPart = amount * ratio
+                    const sashaPart = amount - maxPart
+                    setOnMax(maxPart)
+                    setOnSasha(sashaPart)
+                  }
+                }}
+                min={0}
+                max={100}
+                className="w-full"
+              />
+            </div>
+          </>
+        )}
+
+        <FloatLabel className="w-full mt-10">
+          <InputTextarea
+            id="description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+            autoResize
+            className="w-full"
+          />
+          <label htmlFor="description">Описание</label>
+        </FloatLabel>
 
         <Button
           className="w-full mt-6"
