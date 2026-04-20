@@ -6,6 +6,7 @@ import { getTransactions } from '../../api'
 import { enumConfig } from '../../api/consts'
 import type { CategoryExpenses, Transaction } from '../../api/types'
 import { CategoryExpensesDonut } from '../../components/category-expenses-donut'
+import { InfoWidget } from '../../components/info-widget'
 
 const toStartOfDayIso = (value: Date) => {
   const normalized = new Date(value)
@@ -105,6 +106,28 @@ export const AnalyticsPage = ({ payer }: AnalyticsPageProps) => {
     [expensesByCategory],
   )
 
+  const projectedMonthlyExpenses = useMemo(() => {
+    if (!dateFrom || !dateTo) {
+      return null
+    }
+
+    const millisecondsInDay = 1000 * 60 * 60 * 24
+    const startDate = new Date(dateFrom)
+    const endDate = new Date(dateTo)
+
+    startDate.setHours(0, 0, 0, 0)
+    endDate.setHours(0, 0, 0, 0)
+
+    const daysInSelectedPeriod =
+      Math.floor((endDate.getTime() - startDate.getTime()) / millisecondsInDay) + 1
+
+    if (daysInSelectedPeriod <= 0) {
+      return null
+    }
+
+    return Math.round((totalExpenses / daysInSelectedPeriod) * 30)
+  }, [dateFrom, dateTo, totalExpenses])
+
   return (
     <div className="h-dvh p-5">
       <div className="w-full md:w-1/2 mx-auto">
@@ -121,7 +144,21 @@ export const AnalyticsPage = ({ payer }: AnalyticsPageProps) => {
         </div>
         {payer && (
           <div className="mb-6">
-            <div className="text-5xl font-bold">{formatMoney(totalExpenses)} руб</div>
+            <InfoWidget
+              className="inline-block pr-8"
+              tooltip={
+                projectedMonthlyExpenses !== null ? (
+                  <span>
+                    Экстраполируя на 30 дней, получится {' '}
+                    <b>{formatMoney(projectedMonthlyExpenses)}</b> руб
+                  </span>
+                ) : (
+                  'Недостаточно данных для прогноза'
+                )
+              }
+            >
+              <div className="text-5xl font-bold">{formatMoney(totalExpenses)} руб</div>
+            </InfoWidget>
             <div className="mt-2 text-sm text-surface-600">потрачено за указанный период</div>
           </div>
         )}
