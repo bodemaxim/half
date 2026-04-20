@@ -187,6 +187,14 @@ export const HomePage = ({ payer, setPayer, transactions }: HomePageProps) => {
             className="w-full  mt-2"
           />
         </div>
+        <div className="w-full md:w-1/2 mb-5 mx-auto">
+          <Button
+            severity="secondary"
+            label="Аналитика"
+            onClick={() => navigate('/analytics')}
+            className="w-full mt-2"
+          />
+        </div>
       </div>
       <div className="w-full md:w-1/2 mt-20 mb-5 mx-auto">
         <FloatLabel className="w-full">

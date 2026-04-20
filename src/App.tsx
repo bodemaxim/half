@@ -14,6 +14,7 @@ import { TransactionsPage } from './pages/transactions-page/transactions-page'
 import { HomePage } from './pages/home-page/home-page'
 import { LoginPage } from './pages/login-page/login-page'
 import { EditPage } from './pages/edit-page/edit-page'
+import { AnalyticsPage } from './pages/analytics-page/analytics-page'
 
 function getNewestTrackingStartDate(
   transactions: Transaction[],
@@ -174,6 +175,7 @@ function AppInner() {
             />
           }
         />
+        <Route path="/analytics" element={<AnalyticsPage payer={payer} />} />
         <Route
           path="/edit/:id"
           element={

@@ -2,11 +2,29 @@ import { supabase } from "./supabase-client"
 import type { Transaction } from "./types"
 
 
-export const getTransactions = async (): Promise<Transaction[]> => {
-    const { error, data } = await supabase
+type GetTransactionsParams = {
+  from?: string
+  to?: string
+}
+
+export const getTransactions = async ({
+  from,
+  to,
+}: GetTransactionsParams = {}): Promise<Transaction[]> => {
+    let query = supabase
         .from('transactions')
         .select('*')
         .order('payment_date', { ascending: false })
+
+    if (from) {
+      query = query.gte('payment_date', from)
+    }
+
+    if (to) {
+      query = query.lte('payment_date', to)
+    }
+
+    const { error, data } = await query
   
     if (error) {
       alert(`Ошибка загрузки транзакций: ${error.message}`)

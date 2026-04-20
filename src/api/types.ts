@@ -15,3 +15,4 @@ export type Transaction = {
 }
 
 export type Category = typeof enumConfig.categories[number]['value'];
+export type CategoryExpenses = Record<Category, number>
