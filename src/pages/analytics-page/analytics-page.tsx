@@ -55,9 +55,9 @@ const formatMoney = (value: number) =>
   value.toLocaleString('ru-RU', { maximumFractionDigits: 0 })
 
 const quickRangeOptions: Array<{ value: QuickRange; label: string }> = [
-  { value: 'week', label: 'неделя' },
-  { value: 'twoWeeks', label: '2 недели' },
-  { value: 'month', label: 'месяц' },
+  { value: 'week', label: 'нед' },
+  { value: 'twoWeeks', label: '2 нед' },
+  { value: 'month', label: 'мес' },
 ]
 
 const normalizeDate = (value: Date) => {
