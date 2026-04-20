@@ -47,6 +47,9 @@ type AnalyticsPageProps = {
 const createEmptyCategoryExpenses = (): CategoryExpenses =>
   Object.fromEntries(enumConfig.categories.map((category) => [category.value, 0])) as CategoryExpenses
 
+const formatMoney = (value: number) =>
+  value.toLocaleString('ru-RU', { maximumFractionDigits: 0 })
+
 export const AnalyticsPage = ({ payer }: AnalyticsPageProps) => {
   const navigate = useNavigate()
   const [{ dateFrom, dateTo }, setDateRange] = useState<DateRange>(getDefaultDateRange)
@@ -97,6 +100,11 @@ export const AnalyticsPage = ({ payer }: AnalyticsPageProps) => {
     return totals
   }, [payer, transactions])
 
+  const totalExpenses = useMemo(
+    () => Object.values(expensesByCategory).reduce((sum, value) => sum + value, 0),
+    [expensesByCategory],
+  )
+
   return (
     <div className="h-dvh p-5">
       <div className="w-full md:w-1/2 mx-auto">
@@ -111,6 +119,12 @@ export const AnalyticsPage = ({ payer }: AnalyticsPageProps) => {
             onClick={() => navigate('/home')}
           />
         </div>
+        {payer && (
+          <div className="mb-6">
+            <div className="text-5xl font-bold">{formatMoney(totalExpenses)} руб</div>
+            <div className="mt-2 text-sm text-surface-600">потрачено за указанный период</div>
+          </div>
+        )}
         <div className="flex-b space-x-4">
           <div className="flex flex-col gap-2 w-1/2">
             <label htmlFor="analytics-date-from">Дата от</label>

@@ -5,11 +5,13 @@ import type { Transaction } from "./types"
 type GetTransactionsParams = {
   from?: string
   to?: string
+  limit?: number
 }
 
 export const getTransactions = async ({
   from,
   to,
+  limit,
 }: GetTransactionsParams = {}): Promise<Transaction[]> => {
     let query = supabase
         .from('transactions')
@@ -22,6 +24,10 @@ export const getTransactions = async ({
 
     if (to) {
       query = query.lte('payment_date', to)
+    }
+
+    if (typeof limit === 'number') {
+      query = query.limit(limit)
     }
 
     const { error, data } = await query

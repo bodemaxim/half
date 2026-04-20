@@ -4,7 +4,7 @@ import { enumConfig } from '../../api/consts'
 import { DataTable } from 'primereact/datatable'
 import { Column } from 'primereact/column'
 import { Button } from 'primereact/button'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Temporal } from '@js-temporal/polyfill'
 
@@ -37,6 +37,10 @@ export const TransactionsPage = ({
   const navigate = useNavigate()
   const [isMobile, setIsMobile] = useState(false)
   const [selected, setSelected] = useState<Transaction | null>(null)
+  const visibleTransactions = useMemo(
+    () => transactions.filter((transaction) => transaction.category !== 'gifts'),
+    [transactions],
+  )
 
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 640px)')
@@ -147,7 +151,7 @@ export const TransactionsPage = ({
 
       <DataTable
         key={isMobile ? 'mobile' : 'desktop'}
-        value={transactions}
+        value={visibleTransactions}
         dataKey="id"
         selectionMode="single"
         selection={selected}

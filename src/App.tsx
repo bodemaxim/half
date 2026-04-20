@@ -99,10 +99,11 @@ function AppInner() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [payer, setPayer] = useState<Transaction['payer'] | null>(null)
   const selectedUserStorageKey = 'half_selected_user'
+  const homeAndTransactionsLimit = 150
 
   const reloadTransactions = async () => {
     try {
-      const data = await getTransactions()
+      const data = await getTransactions({ limit: homeAndTransactionsLimit })
       setTransactions(data)
     } catch (e) {
       console.error('getTransactions failed:', e)
