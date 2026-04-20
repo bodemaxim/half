@@ -1,5 +1,6 @@
 import { Button } from 'primereact/button'
 import { Calendar } from 'primereact/calendar'
+import { Tag } from 'primereact/tag'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getTransactions } from '../../api'
@@ -41,6 +42,8 @@ type DateRange = {
   dateTo: Date | null
 }
 
+type QuickRange = 'week' | 'twoWeeks' | 'month'
+
 type AnalyticsPageProps = {
   payer: Transaction['payer'] | null
 }
@@ -51,10 +54,91 @@ const createEmptyCategoryExpenses = (): CategoryExpenses =>
 const formatMoney = (value: number) =>
   value.toLocaleString('ru-RU', { maximumFractionDigits: 0 })
 
+const quickRangeOptions: Array<{ value: QuickRange; label: string }> = [
+  { value: 'week', label: 'неделя' },
+  { value: 'twoWeeks', label: '2 недели' },
+  { value: 'month', label: 'месяц' },
+]
+
+const normalizeDate = (value: Date) => {
+  const normalized = new Date(value)
+
+  normalized.setHours(0, 0, 0, 0)
+
+  return normalized
+}
+
+const getDateFromByQuickRange = (range: QuickRange, dateTo: Date) => {
+  const dateFrom = normalizeDate(dateTo)
+
+  if (range === 'week') {
+    dateFrom.setDate(dateFrom.getDate() - 6)
+  }
+
+  if (range === 'twoWeeks') {
+    dateFrom.setDate(dateFrom.getDate() - 13)
+  }
+
+  if (range === 'month') {
+    dateFrom.setMonth(dateFrom.getMonth() - 1)
+  }
+
+  return dateFrom
+}
+
 export const AnalyticsPage = ({ payer }: AnalyticsPageProps) => {
   const navigate = useNavigate()
   const [{ dateFrom, dateTo }, setDateRange] = useState<DateRange>(getDefaultDateRange)
+  const [selectedQuickRange, setSelectedQuickRange] = useState<QuickRange | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>([])
+
+  const selectedQuickDateTo = useMemo(() => {
+    if (!dateTo) {
+      return null
+    }
+
+    const normalizedDateTo = normalizeDate(dateTo).getTime()
+    const today = normalizeDate(new Date()).getTime()
+    const yesterdayDate = normalizeDate(new Date())
+
+    yesterdayDate.setDate(yesterdayDate.getDate() - 1)
+
+    if (normalizedDateTo === today) {
+      return 'today'
+    }
+
+    if (normalizedDateTo === yesterdayDate.getTime()) {
+      return 'yesterday'
+    }
+
+    return null
+  }, [dateTo])
+
+  const applyQuickRange = (range: QuickRange) => {
+    const nextDateTo =
+      selectedQuickDateTo !== null && dateTo ? normalizeDate(dateTo) : normalizeDate(new Date())
+    const nextDateFrom = getDateFromByQuickRange(range, nextDateTo)
+
+    setDateRange({ dateFrom: nextDateFrom, dateTo: nextDateTo })
+    setSelectedQuickRange(range)
+  }
+
+  const handleDateChange = (field: keyof DateRange, value: Date | null) => {
+    setDateRange((prev) => ({ ...prev, [field]: value }))
+    setSelectedQuickRange(null)
+  }
+
+  const applyQuickDateTo = (daysOffset: number) => {
+    const nextDateTo = normalizeDate(new Date())
+
+    nextDateTo.setDate(nextDateTo.getDate() - daysOffset)
+
+    setDateRange((prev) => ({
+      dateFrom:
+        selectedQuickRange !== null ? getDateFromByQuickRange(selectedQuickRange, nextDateTo) : prev.dateFrom,
+      dateTo: nextDateTo,
+    }))
+  }
 
   useEffect(() => {
     let isActive = true
@@ -162,34 +246,59 @@ export const AnalyticsPage = ({ payer }: AnalyticsPageProps) => {
             <div className="mt-2 text-sm text-surface-600">потрачено за указанный период</div>
           </div>
         )}
-        <div className="flex-b space-x-4">
-          <div className="flex flex-col gap-2 w-1/2">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col gap-2">
             <label htmlFor="analytics-date-from">Дата от</label>
             <Calendar
               inputId="analytics-date-from"
               value={dateFrom}
-              onChange={(e) =>
-                setDateRange((prev) => ({ ...prev, dateFrom: e.value ?? null }))
-              }
+              onChange={(e) => handleDateChange('dateFrom', e.value ?? null)}
               dateFormat="dd.mm.yy"
               showIcon
               className="w-full"
             />
+            <div className="mt-3 flex flex-wrap gap-2">
+              {quickRangeOptions.map((option) => (
+                <Tag
+                  key={option.value}
+                  value={option.label}
+                  severity={selectedQuickRange === option.value ? 'success' : 'secondary'}
+                  rounded
+                  onClick={() => applyQuickRange(option.value)}
+                  className="cursor-pointer select-none"
+                />
+              ))}
+            </div>
           </div>
-          <div className="flex flex-col gap-2  w-1/2">
+          <div className="flex flex-col gap-2">
             <label htmlFor="analytics-date-to">Дата до</label>
             <Calendar
               inputId="analytics-date-to"
               value={dateTo}
-              onChange={(e) =>
-                setDateRange((prev) => ({ ...prev, dateTo: e.value ?? null }))
-              }
+              onChange={(e) => handleDateChange('dateTo', e.value ?? null)}
               dateFormat="dd.mm.yy"
               showIcon
               className="w-full"
             />
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Tag
+                value="сегодня"
+                severity={selectedQuickDateTo === 'today' ? 'success' : 'secondary'}
+                rounded
+                onClick={() => applyQuickDateTo(0)}
+                className="cursor-pointer select-none"
+              />
+              <Tag
+                value="вчера"
+                severity={selectedQuickDateTo === 'yesterday' ? 'success' : 'secondary'}
+                rounded
+                onClick={() => applyQuickDateTo(1)}
+                className="cursor-pointer select-none"
+              />
+            </div>
           </div>
         </div>
+        
         {payer ? (
           <CategoryExpensesDonut data={expensesByCategory} />
         ) : (
