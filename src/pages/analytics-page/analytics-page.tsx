@@ -29,6 +29,7 @@ const getDefaultDateRange = () => {
   const today = new Date()
   const monthAgo = new Date(today)
 
+  monthAgo.setDate(monthAgo.getDate() + 1)
   monthAgo.setMonth(monthAgo.getMonth() - 1)
 
   return {
@@ -47,6 +48,8 @@ type QuickRange = 'week' | 'twoWeeks' | 'month'
 type AnalyticsPageProps = {
   payer: Transaction['payer'] | null
 }
+
+const excludedAnalyticsCategory = 'close_period'
 
 const createEmptyCategoryExpenses = (): CategoryExpenses =>
   Object.fromEntries(enumConfig.categories.map((category) => [category.value, 0])) as CategoryExpenses
@@ -80,6 +83,8 @@ const getDateFromByQuickRange = (range: QuickRange, dateTo: Date) => {
   }
 
   if (range === 'month') {
+    // Inclusive month range: Apr 20 -> Mar 21, not Mar 20.
+    dateFrom.setDate(dateFrom.getDate() + 1)
     dateFrom.setMonth(dateFrom.getMonth() - 1)
   }
 
@@ -172,7 +177,10 @@ export const AnalyticsPage = ({ payer }: AnalyticsPageProps) => {
     }
 
     for (const transaction of transactions) {
-      if (!enumConfig.categories.some((category) => category.value === transaction.category)) {
+      if (
+        transaction.category === excludedAnalyticsCategory ||
+        !enumConfig.categories.some((category) => category.value === transaction.category)
+      ) {
         continue
       }
 

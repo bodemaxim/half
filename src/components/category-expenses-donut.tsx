@@ -6,6 +6,8 @@ type CategoryExpensesDonutProps = {
   data: CategoryExpenses
 }
 
+const excludedAnalyticsCategory = 'close_period'
+
 const chartColors = [
   '#42A5F5',
   '#66BB6A',
@@ -35,6 +37,7 @@ const chartColors = [
 
 export const CategoryExpensesDonut = ({ data }: CategoryExpensesDonutProps) => {
   const sortedCategories = enumConfig.categories
+    .filter((category) => category.value !== excludedAnalyticsCategory)
     .map((category, index) => ({
       label: category.label,
       value: data[category.value] ?? 0,
