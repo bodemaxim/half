@@ -37,10 +37,26 @@ export const TransactionsPage = ({
   const navigate = useNavigate()
   const [isMobile, setIsMobile] = useState(false)
   const [selected, setSelected] = useState<Transaction | null>(null)
-  const visibleTransactions = useMemo(
-    () => transactions.filter((transaction) => transaction.category !== 'gifts'),
-    [transactions],
-  )
+  const selectedUserStorageKey = 'half_selected_user'
+  const visibleTransactions = useMemo(() => {
+    const selectedUser = localStorage.getItem(selectedUserStorageKey)
+
+    return transactions.filter((transaction) => {
+      if (transaction.category === 'gifts') {
+        return false
+      }
+
+      if (selectedUser === 'sasha') {
+        return transaction.on_sasha > 0
+      }
+
+      if (selectedUser === 'max') {
+        return transaction.on_max > 0
+      }
+
+      return true
+    })
+  }, [transactions])
 
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 640px)')

@@ -10,12 +10,9 @@ import { Slider } from 'primereact/slider'
 import { useNavigate } from 'react-router-dom'
 import { Temporal } from '@js-temporal/polyfill'
 import { createTransaction, updateTransaction } from '../../api'
-import { enumConfig } from '../../api/consts'
+import { categoryGroups, enumConfig } from '../../api/consts'
 import type { Transaction } from '../../api/types'
-
-type CategoryOption = (typeof enumConfig.categories)[number]
-
-const categoryOptions: CategoryOption[] = [...enumConfig.categories]
+import { CategoriesGroupCard } from '../../components/categories-group-card'
 
 
 type EditPageProps = {
@@ -73,6 +70,26 @@ export const EditPage = ({
     }
 
     return '0 руб'
+  }
+
+  const toggleCategory = (categoryValue: string) => {
+    if (allowMultipleCategoryTags) {
+      setSelectedCategories((prev) =>
+        prev.includes(categoryValue)
+          ? prev.filter((value) => value !== categoryValue)
+          : [...prev, categoryValue],
+      )
+
+      return
+    }
+
+    setSelectedCategories((prev) => {
+      if (prev.length === 1 && prev[0] === categoryValue) {
+        return []
+      }
+
+      return [categoryValue]
+    })
   }
 
   useEffect(() => {
@@ -182,43 +199,48 @@ export const EditPage = ({
 
         {mode !== 'close_period' && (
           <Panel header="Категория" className="w-full mt-10">
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-wrap gap-2">
-                {categoryOptions.map((tag) => {
-                  const selected = selectedCategories.includes(tag.value)
-
-                  return (
-                    <button
-                      key={tag.value}
-                      type="button"
-                      onClick={() => {
-                        if (allowMultipleCategoryTags) {
-                          setSelectedCategories((prev) =>
-                            prev.includes(tag.value)
-                              ? prev.filter((v) => v !== tag.value)
-                              : [...prev, tag.value],
+            <div className="flex flex-col gap-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                {Object.entries(categoryGroups).map(([groupKey, group]) => (
+                  <CategoriesGroupCard
+                    key={groupKey}
+                    config={{
+                      'header-bg-color': group['header-bg-color'],
+                      'header-icon': group['header-icon'],
+                      'body-bg-color': group['body-bg-color'],
+                    }}
+                    headerSlot={
+                      <div className="text-base font-semibold leading-none">
+                        {group.label}
+                      </div>
+                    }
+                    bodySlot={
+                      <div className="flex flex-wrap gap-2">
+                        {group.categories.map((category) => {
+                          const selected = selectedCategories.includes(
+                            category.value,
                           )
-                        } else {
-                          setSelectedCategories((prev) => {
-                            if (prev.length === 1 && prev[0] === tag.value) {
-                              return []
-                            }
 
-                            return [tag.value]
-                          })
-                        }
-                      }}
-                      aria-pressed={selected}
-                      className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
-                        selected
-                          ? 'border-green-600 bg-green-50 text-green-900'
-                          : 'border-neutral-300 bg-neutral-50 text-neutral-800 hover:bg-neutral-100'
-                      }`}
-                    >
-                      {tag.label}
-                    </button>
-                  )
-                })}
+                          return (
+                            <button
+                              key={category.value}
+                              type="button"
+                              onClick={() => toggleCategory(category.value)}
+                              aria-pressed={selected}
+                              className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                                selected
+                                  ? 'border-green-600 bg-green-50 text-green-900'
+                                  : 'border-neutral-300 bg-white text-neutral-800 hover:bg-neutral-100'
+                              }`}
+                            >
+                              {category.label}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    }
+                  />
+                ))}
               </div>
 
               <div className="flex items-center gap-2 pt-1">

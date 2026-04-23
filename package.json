@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@js-temporal/polyfill": "^0.5.1",
+    "@mdi/js": "^7.4.47",
+    "@mdi/react": "^1.6.1",
     "@tailwindcss/vite": "^4.2.1",
     "chart.js": "^4.5.1",
     "primeicons": "^7.0.0",
