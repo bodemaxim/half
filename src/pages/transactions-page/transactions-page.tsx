@@ -1,9 +1,11 @@
 import type { TransactionsPageProps } from './transactions-page.types'
 import type { Transaction } from '../../api/types'
+import type { MenuItem } from 'primereact/menuitem'
 import { enumConfig } from '../../api/consts'
 import { DataTable } from 'primereact/datatable'
 import { Column } from 'primereact/column'
 import { Button } from 'primereact/button'
+import { SpeedDial } from 'primereact/speeddial'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Temporal } from '@js-temporal/polyfill'
@@ -98,6 +100,43 @@ export const TransactionsPage = ({
     }
   }
 
+  const handleDeleteSelected = async () => {
+    if (!selected) return
+    if (
+      !confirm('Удалить выбранную транзакцию? Это действие нельзя отменить.')
+    ) {
+      return
+    }
+    const id = selected.id
+    const ok = await Promise.resolve(onDeleteTransaction(id))
+    if (ok) setSelected(null)
+  }
+
+  const speedDialItems = useMemo<MenuItem[]>(
+    () => [
+      {
+        label: 'Новая транзакция',
+        icon: 'pi pi-plus',
+        command: () => navigate('/new'),
+      },
+      {
+        label: 'Редактировать',
+        icon: 'pi pi-pencil',
+        disabled: !selected,
+        command: () => selected && navigate(`/edit/${selected.id}`),
+      },
+      {
+        label: 'Удалить',
+        icon: 'pi pi-trash',
+        disabled: !selected,
+        command: () => {
+          void handleDeleteSelected()
+        },
+      },
+    ],
+    [selected],
+  )
+
   const renderMobileData = (t: (typeof transactions)[number]) => (
     <ul className="m-0 p-0 list-none text-sm space-y-1">
       <li><strong>Плательщик:</strong> {userLabel(t.payer)}</li>
@@ -113,56 +152,67 @@ export const TransactionsPage = ({
 
   return (
     <div className="h-dvh p-5">
-      <div className="flex-b">
-        <h1 className="text-3xl font-bold m-0">Транзакции</h1>
-        <div className="flex items-center gap-1">
-          <Button
-            icon="pi pi-plus"
-            rounded
-            text
-            aria-label="Новая транзакция"
-            onClick={() => navigate('/new')}
-          />
-          <Button
-            icon="pi pi-pencil"
-            rounded
-            text
-            disabled={!selected}
-            aria-label="Редактировать"
-            onClick={() => selected && navigate(`/edit/${selected.id}`)}
-          />
-          <Button
-            icon="pi pi-trash"
-            rounded
-            text
-            severity="danger"
-            disabled={!selected}
-            aria-label="Удалить"
-            onClick={async () => {
-              if (!selected) return
-              if (
-                !confirm(
-                  'Удалить выбранную транзакцию? Это действие нельзя отменить.',
-                )
-              ) {
-                return
-              }
-              const id = selected.id
-              const ok = await Promise.resolve(onDeleteTransaction(id))
-              if (ok) setSelected(null)
-            }}
-          />
-          <div className="ml-5">
+      <div className="flex-b mb-5">
+        <h1 className="m-0 min-w-0 text-3xl font-bold">Транзакции</h1>
+        {isMobile ? (
+          <div className="relative z-50 flex shrink-0 items-center gap-2 pr-2 transform translate-x-[16px]">
+            <div>
+              <SpeedDial
+                model={speedDialItems}
+                radius={120}
+                type="quarter-circle"
+                direction="down-left"
+                style={{ position: 'relative', zIndex: 50 }}
+                buttonStyle={{ width: '2.25rem', height: '2.25rem' }}
+              />
+            </div>
             <Button
               icon="pi pi-backward"
               rounded
               text
               aria-label="На главную"
-
               onClick={() => navigate('/home')}
             />
           </div>
-        </div>
+        ) : (
+          <div className="flex items-center gap-1">
+            <Button
+              icon="pi pi-plus"
+              rounded
+              text
+              aria-label="Новая транзакция"
+              onClick={() => navigate('/new')}
+            />
+            <Button
+              icon="pi pi-pencil"
+              rounded
+              text
+              disabled={!selected}
+              aria-label="Редактировать"
+              onClick={() => selected && navigate(`/edit/${selected.id}`)}
+            />
+            <Button
+              icon="pi pi-trash"
+              rounded
+              text
+              severity="danger"
+              disabled={!selected}
+              aria-label="Удалить"
+              onClick={() => {
+                void handleDeleteSelected()
+              }}
+            />
+            <div className="ml-5">
+              <Button
+                icon="pi pi-backward"
+                rounded
+                text
+                aria-label="На главную"
+                onClick={() => navigate('/home')}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <DataTable
