@@ -350,7 +350,7 @@ export const PlanningTool = ({ projectedMonthlyExpenses, payer }: PlanningToolPr
         borderWidth: 2,
       },
       {
-        label: 'Фактические траты',
+        label: 'Фактический расход',
         data: actualValues,
         borderColor: '#EF5350',
         backgroundColor: '#EF5350',
@@ -479,7 +479,7 @@ export const PlanningTool = ({ projectedMonthlyExpenses, payer }: PlanningToolPr
 
   return (
     <div className="mt-12">
-      <h1 className="text-3xl font-bold m-0 mb-4">Инструмент коррекции трат к плану</h1>
+      <h1 className="text-3xl font-bold m-0 mb-4">Инструмент коррекции расходов к плану</h1>
 
       <div className="mb-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
         <div>
@@ -580,7 +580,7 @@ export const PlanningTool = ({ projectedMonthlyExpenses, payer }: PlanningToolPr
                       : '—'}
                   </div>
                   <div className="mt-2 text-sm text-surface-600">
-                    экстраполированный средний расход
+                    экстраполированный средний расход в день
                   </div>
                 </div>
                 <div>
