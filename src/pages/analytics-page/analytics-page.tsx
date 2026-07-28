@@ -8,6 +8,7 @@ import { enumConfig } from '../../api/consts'
 import type { CategoryExpenses, Transaction } from '../../api/types'
 import { CategoryExpensesDonut } from '../../components/category-expenses-donut'
 import { InfoWidget } from '../../components/info-widget'
+import { PlanningTool } from '../../components/planning-tool'
 
 const toStartOfDayIso = (value: Date) => {
   const normalized = new Date(value)
@@ -308,7 +309,10 @@ export const AnalyticsPage = ({ payer }: AnalyticsPageProps) => {
         </div>
         
         {payer ? (
-          <CategoryExpensesDonut data={expensesByCategory} />
+          <>
+            <CategoryExpensesDonut data={expensesByCategory} />
+            <PlanningTool projectedMonthlyExpenses={projectedMonthlyExpenses} />
+          </>
         ) : (
           <div className="mt-6 rounded-xl border border-surface-200 p-4">
             Выбери пользователя на главной странице, чтобы посмотреть аналитику.
