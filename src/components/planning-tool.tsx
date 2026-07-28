@@ -244,17 +244,15 @@ export const PlanningTool = ({ projectedMonthlyExpenses, payer }: PlanningToolPr
     }
   }, [periodDates])
 
-  const extrapolatedAverageSpend = useMemo(() => {
+  const periodSpendMetrics = useMemo(() => {
+    const empty = { spentPast: 0, extrapolatedAverageSpend: null as number | null }
+
     if (chartDays.length === 0) {
-      return null
+      return empty
     }
 
     const todayTime = normalizeDate(new Date()).getTime()
     const pastDays = chartDays.filter((day) => day.getTime() < todayTime)
-
-    if (pastDays.length === 0) {
-      return null
-    }
 
     const actualByDay = new Map<string, number>()
 
@@ -269,13 +267,38 @@ export const PlanningTool = ({ projectedMonthlyExpenses, payer }: PlanningToolPr
       actualByDay.set(dayKey, (actualByDay.get(dayKey) ?? 0) + amountForSelectedUser)
     }
 
-    const pastSum = pastDays.reduce(
+    const spentPast = pastDays.reduce(
       (sum, day) => sum + (actualByDay.get(toDateStorageValue(day)) ?? 0),
       0,
     )
 
-    return pastSum / pastDays.length
+    return {
+      spentPast,
+      extrapolatedAverageSpend: pastDays.length > 0 ? spentPast / pastDays.length : null,
+    }
   }, [chartDays, payer, periodTransactions])
+
+  const remainingDailyBudget = useMemo(() => {
+    if (
+      correctionDailyBudget === null ||
+      correctionDays === null ||
+      correctionDays <= 0 ||
+      chartDays.length === 0
+    ) {
+      return null
+    }
+
+    const todayTime = normalizeDate(new Date()).getTime()
+    const remainingDays = chartDays.filter((day) => day.getTime() >= todayTime).length
+
+    if (remainingDays === 0) {
+      return null
+    }
+
+    const periodPlanTotal = correctionDailyBudget * correctionDays
+
+    return Math.round((periodPlanTotal - periodSpendMetrics.spentPast) / remainingDays)
+  }, [chartDays, correctionDailyBudget, correctionDays, periodSpendMetrics.spentPast])
 
   const chartData = useMemo(() => {
     if (correctionDailyBudget === null || chartDays.length === 0) {
@@ -337,10 +360,10 @@ export const PlanningTool = ({ projectedMonthlyExpenses, payer }: PlanningToolPr
       },
     ]
 
-    if (extrapolatedAverageSpend !== null) {
+    if (periodSpendMetrics.extrapolatedAverageSpend !== null) {
       datasets.push({
         label: 'Экстраполированный средний расход',
-        data: chartDays.map(() => extrapolatedAverageSpend),
+        data: chartDays.map(() => periodSpendMetrics.extrapolatedAverageSpend),
         borderColor: '#EF5350',
         backgroundColor: '#EF5350',
         tension: 0,
@@ -354,7 +377,7 @@ export const PlanningTool = ({ projectedMonthlyExpenses, payer }: PlanningToolPr
       labels,
       datasets,
     }
-  }, [chartDays, correctionDailyBudget, extrapolatedAverageSpend, payer, periodTransactions])
+  }, [chartDays, correctionDailyBudget, periodSpendMetrics.extrapolatedAverageSpend, payer, periodTransactions])
 
   const chartOptions = useMemo(() => {
     const documentStyle = getComputedStyle(document.documentElement)
@@ -455,8 +478,8 @@ export const PlanningTool = ({ projectedMonthlyExpenses, payer }: PlanningToolPr
   }
 
   return (
-    <div className="mt-8">
-      <h1 className="text-3xl font-bold m-0 mb-4">Инструмент планирования</h1>
+    <div className="mt-12">
+      <h1 className="text-3xl font-bold m-0 mb-4">Инструмент коррекции трат к плану</h1>
 
       <div className="mb-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
         <div>
@@ -549,16 +572,28 @@ export const PlanningTool = ({ projectedMonthlyExpenses, payer }: PlanningToolPr
                   className="h-full w-full"
                 />
               </div>
-              {extrapolatedAverageSpend !== null && (
-                <div className="mt-6">
+              <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div>
                   <div className="text-5xl font-bold">
-                    {formatMoney(extrapolatedAverageSpend)} руб
+                    {periodSpendMetrics.extrapolatedAverageSpend !== null
+                      ? `${formatMoney(periodSpendMetrics.extrapolatedAverageSpend)} руб`
+                      : '—'}
                   </div>
                   <div className="mt-2 text-sm text-surface-600">
                     экстраполированный средний расход
                   </div>
                 </div>
-              )}
+                <div>
+                  <div className="text-5xl font-bold">
+                    {remainingDailyBudget !== null
+                      ? `${formatMoney(remainingDailyBudget)} руб`
+                      : '—'}
+                  </div>
+                  <div className="mt-2 text-sm text-surface-600">
+                    бюджет дня до конца периода
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
