@@ -26,15 +26,64 @@ const toEndOfDayIso = (value: Date) => {
   return normalized.toISOString()
 }
 
+const dateFromStorageKey = 'half_analytics_date_from'
+
+const normalizeDate = (value: Date) => {
+  const normalized = new Date(value)
+
+  normalized.setHours(0, 0, 0, 0)
+
+  return normalized
+}
+
+const toDateStorageValue = (value: Date) => {
+  const year = value.getFullYear()
+  const month = String(value.getMonth() + 1).padStart(2, '0')
+  const day = String(value.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+const readStoredDate = (key: string): Date | null => {
+  const raw = localStorage.getItem(key)
+
+  if (raw === null || raw === '') {
+    return null
+  }
+
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw)
+
+  if (!match) {
+    return null
+  }
+
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+  const parsed = new Date(year, month - 1, day)
+
+  if (
+    Number.isNaN(parsed.getTime()) ||
+    parsed.getFullYear() !== year ||
+    parsed.getMonth() !== month - 1 ||
+    parsed.getDate() !== day
+  ) {
+    return null
+  }
+
+  return normalizeDate(parsed)
+}
+
 const getDefaultDateRange = () => {
-  const today = new Date()
+  const today = normalizeDate(new Date())
+  const storedDateFrom = readStoredDate(dateFromStorageKey)
   const monthAgo = new Date(today)
 
   monthAgo.setDate(monthAgo.getDate() + 1)
   monthAgo.setMonth(monthAgo.getMonth() - 1)
 
   return {
-    dateFrom: monthAgo,
+    dateFrom: storedDateFrom ?? monthAgo,
     dateTo: today,
   }
 }
@@ -63,14 +112,6 @@ const quickRangeOptions: Array<{ value: QuickRange; label: string }> = [
   { value: 'twoWeeks', label: '2 нед' },
   { value: 'month', label: 'мес' },
 ]
-
-const normalizeDate = (value: Date) => {
-  const normalized = new Date(value)
-
-  normalized.setHours(0, 0, 0, 0)
-
-  return normalized
-}
 
 const getDateFromByQuickRange = (range: QuickRange, dateTo: Date) => {
   const dateFrom = normalizeDate(dateTo)
@@ -145,6 +186,15 @@ export const AnalyticsPage = ({ payer }: AnalyticsPageProps) => {
       dateTo: nextDateTo,
     }))
   }
+
+  useEffect(() => {
+    if (dateFrom === null) {
+      localStorage.removeItem(dateFromStorageKey)
+      return
+    }
+
+    localStorage.setItem(dateFromStorageKey, toDateStorageValue(normalizeDate(dateFrom)))
+  }, [dateFrom])
 
   useEffect(() => {
     let isActive = true
@@ -311,7 +361,7 @@ export const AnalyticsPage = ({ payer }: AnalyticsPageProps) => {
         {payer ? (
           <>
             <CategoryExpensesDonut data={expensesByCategory} />
-            <PlanningTool projectedMonthlyExpenses={projectedMonthlyExpenses} />
+            <PlanningTool projectedMonthlyExpenses={projectedMonthlyExpenses} payer={payer} />
           </>
         ) : (
           <div className="mt-6 rounded-xl border border-surface-200 p-4">
