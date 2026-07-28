@@ -13,11 +13,13 @@ export const enumConfig = {
       { value: 'clothes', label: 'Одежда' },
       { value: 'footwear', label: 'Обувь' },
       { value: 'gadgets', label: 'Гаджеты' },
+      { value: 'treat_yourself', label: 'Порадовать себя' },
       { value: 'sport', label: 'Спорт' },
       { value: 'entertainment', label: 'Развлечения' },
       { value: 'alcohole', label: 'Алкоголь' },
       { value: 'public_transport', label: 'Общественный транспорт' },
       { value: 'taxi', label: 'Такси' },
+      { value: 'electro_vehicles', label: 'Самокаты и велики' },
       { value: 'furniture', label: 'Мебель' },
       { value: 'household_items', label: 'Товары для дома' },
       { value: 'gifts', label: 'Подарки'},
@@ -88,6 +90,7 @@ export const categoryGroups = {
       { value: 'clothes', label: 'Одежда' },
       { value: 'footwear', label: 'Обувь' },
       { value: 'gadgets', label: 'Гаджеты' },
+      { value: 'treat_yourself', label: 'Порадовать себя' },
       { value: 'gifts', label: 'Подарки' },
       { value: 'stationery', label: 'Канцтовары' },
     ]
@@ -99,7 +102,8 @@ export const categoryGroups = {
     'body-bg-color': '#EDFDF6',
     categories: [
       { value: 'public_transport', label: 'Общественный транспорт' },
-      { value: 'taxi', label: 'Такси' }
+      { value: 'taxi', label: 'Такси' },
+      { value: 'electro_vehicles', label: 'Самокаты и велики' },
     ]
   },
   rest: {
