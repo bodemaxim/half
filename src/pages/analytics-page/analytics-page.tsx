@@ -9,6 +9,7 @@ import type { CategoryExpenses, Transaction } from '../../api/types'
 import { CategoryExpensesDonut } from '../../components/category-expenses-donut'
 import { InfoWidget } from '../../components/info-widget'
 import { PlanningTool } from '../../components/planning-tool'
+import { DAYS_IN_MONTH } from '../../constants'
 
 const toStartOfDayIso = (value: Date) => {
   const normalized = new Date(value)
@@ -249,7 +250,7 @@ export const AnalyticsPage = ({ payer }: AnalyticsPageProps) => {
     [expensesByCategory],
   )
 
-  const projectedMonthlyExpenses = useMemo(() => {
+  const analyticsPeriodDays = useMemo(() => {
     if (!dateFrom || !dateTo) {
       return null
     }
@@ -268,8 +269,16 @@ export const AnalyticsPage = ({ payer }: AnalyticsPageProps) => {
       return null
     }
 
-    return Math.round((totalExpenses / daysInSelectedPeriod) * 30)
-  }, [dateFrom, dateTo, totalExpenses])
+    return daysInSelectedPeriod
+  }, [dateFrom, dateTo])
+
+  const projectedMonthlyExpenses = useMemo(() => {
+    if (analyticsPeriodDays === null) {
+      return null
+    }
+
+    return Math.round((totalExpenses / analyticsPeriodDays) * DAYS_IN_MONTH)
+  }, [analyticsPeriodDays, totalExpenses])
 
   return (
     <div className="h-dvh p-5">
@@ -292,7 +301,7 @@ export const AnalyticsPage = ({ payer }: AnalyticsPageProps) => {
               tooltip={
                 projectedMonthlyExpenses !== null ? (
                   <span>
-                    Экстраполируя на 30 дней, получится {' '}
+                    Экстраполируя на {DAYS_IN_MONTH} дней, получится{' '}
                     <b>{formatMoney(projectedMonthlyExpenses)}</b> руб
                   </span>
                 ) : (
@@ -361,7 +370,12 @@ export const AnalyticsPage = ({ payer }: AnalyticsPageProps) => {
         {payer ? (
           <>
             <CategoryExpensesDonut data={expensesByCategory} />
-            <PlanningTool projectedMonthlyExpenses={projectedMonthlyExpenses} payer={payer} />
+            <PlanningTool
+              projectedMonthlyExpenses={projectedMonthlyExpenses}
+              analyticsPeriodDays={analyticsPeriodDays}
+              totalExpenses={totalExpenses}
+              payer={payer}
+            />
           </>
         ) : (
           <div className="mt-6 rounded-xl border border-surface-200 p-4">

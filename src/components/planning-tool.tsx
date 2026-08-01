@@ -4,6 +4,7 @@ import { InputNumber } from 'primereact/inputnumber'
 import { useEffect, useMemo, useState } from 'react'
 import { getTransactions } from '../api'
 import type { Transaction } from '../api/types'
+import { DAYS_IN_MONTH } from '../constants'
 
 const desiredMonthlyStorageKey = 'half_planning_desired_monthly'
 const correctionDaysStorageKey = 'half_planning_correction_days'
@@ -142,10 +143,25 @@ const getPaymentDayKey = (paymentDate: string) => {
 
 type PlanningToolProps = {
   projectedMonthlyExpenses: number | null
+  analyticsPeriodDays: number | null
+  totalExpenses: number
   payer: Transaction['payer']
 }
 
-export const PlanningTool = ({ projectedMonthlyExpenses, payer }: PlanningToolProps) => {
+type CorrectionBudgetSteps = {
+  correctedPeriodDays: number
+  desiredDailyBudget: number
+  correctedPeriodBudget: number
+  correctionPeriodBudget: number
+  correctionDailyBudget: number
+}
+
+export const PlanningTool = ({
+  projectedMonthlyExpenses,
+  analyticsPeriodDays,
+  totalExpenses,
+  payer,
+}: PlanningToolProps) => {
   const [desiredMonthly, setDesiredMonthly] = useState<number | null>(() =>
     readStoredNumber(desiredMonthlyStorageKey),
   )
@@ -162,12 +178,13 @@ export const PlanningTool = ({ projectedMonthlyExpenses, payer }: PlanningToolPr
       return null
     }
 
-    return Math.round(projectedMonthlyExpenses / 30)
+    return Math.round(projectedMonthlyExpenses / DAYS_IN_MONTH)
   }, [projectedMonthlyExpenses])
 
-  const correctionDailyBudget = useMemo(() => {
+  const correctionBudgetSteps = useMemo((): CorrectionBudgetSteps | null => {
     if (
-      projectedMonthlyExpenses === null ||
+      analyticsPeriodDays === null ||
+      analyticsPeriodDays <= 0 ||
       desiredMonthly === null ||
       correctionDays === null ||
       correctionDays <= 0
@@ -175,17 +192,29 @@ export const PlanningTool = ({ projectedMonthlyExpenses, payer }: PlanningToolPr
       return null
     }
 
-    return Math.round(
-      desiredMonthly / 30 - (projectedMonthlyExpenses - desiredMonthly) / correctionDays,
-    )
-  }, [projectedMonthlyExpenses, desiredMonthly, correctionDays])
+    const correctedPeriodDays = analyticsPeriodDays + correctionDays
+    const desiredDailyBudget = Math.round(desiredMonthly / DAYS_IN_MONTH)
+    const correctedPeriodBudget = Math.round(correctedPeriodDays * desiredDailyBudget)
+    const correctionPeriodBudget = Math.round(correctedPeriodBudget - totalExpenses)
+    const correctionDailyBudget = Math.round(correctionPeriodBudget / correctionDays)
+
+    return {
+      correctedPeriodDays,
+      desiredDailyBudget,
+      correctedPeriodBudget,
+      correctionPeriodBudget,
+      correctionDailyBudget,
+    }
+  }, [analyticsPeriodDays, desiredMonthly, correctionDays, totalExpenses])
+
+  const correctionDailyBudget = correctionBudgetSteps?.correctionDailyBudget ?? null
 
   const extrapolatedMonthly = useMemo(() => {
     if (correctionDailyBudget === null) {
       return null
     }
 
-    return correctionDailyBudget * 30
+    return Math.round(correctionDailyBudget * DAYS_IN_MONTH)
   }, [correctionDailyBudget])
 
   const periodDates = useMemo(() => {
@@ -195,7 +224,7 @@ export const PlanningTool = ({ projectedMonthlyExpenses, payer }: PlanningToolPr
 
     const start = normalizeDate(correctionStartDate)
     const end = new Date(start)
-    end.setDate(end.getDate() + correctionDays)
+    end.setDate(end.getDate() + correctionDays - 1)
 
     return { start, end }
   }, [correctionStartDate, correctionDays])
@@ -222,12 +251,9 @@ export const PlanningTool = ({ projectedMonthlyExpenses, payer }: PlanningToolPr
     let isActive = true
 
     const loadPeriodTransactions = async () => {
-      const lastInclusiveDay = new Date(periodDates.end)
-      lastInclusiveDay.setDate(lastInclusiveDay.getDate() - 1)
-
       const data = await getTransactions({
         from: toStartOfDayIso(periodDates.start),
-        to: toEndOfDayIso(lastInclusiveDay),
+        to: toEndOfDayIso(periodDates.end),
       })
 
       if (!isActive) {
@@ -494,7 +520,7 @@ export const PlanningTool = ({ projectedMonthlyExpenses, payer }: PlanningToolPr
           <div className="text-5xl font-bold">
             {dailyBudget !== null ? `${formatMoney(dailyBudget)} руб` : '—'}
           </div>
-          <div className="mt-2 text-sm text-surface-600">бюджет дня (факт)</div>
+          <div className="mt-2 text-sm text-surface-600">средний расход в день</div>
         </div>
       </div>
 
@@ -596,6 +622,60 @@ export const PlanningTool = ({ projectedMonthlyExpenses, payer }: PlanningToolPr
               </div>
             </div>
           )}
+          {correctionBudgetSteps &&
+            analyticsPeriodDays !== null &&
+            desiredMonthly !== null &&
+            correctionDays !== null && (
+              <div className="mt-8 pb-5">
+                <h2 className="mb-4 text-xl font-semibold">Как считается дневной бюджет</h2>
+                <ol className="m-0 flex list-decimal flex-col gap-3 pl-5 text-sm text-surface-700">
+                  <li>
+                    <span className="font-medium">
+                      {formatMoney(analyticsPeriodDays)} + {formatMoney(correctionDays)} ={' '}
+                      {formatMoney(correctionBudgetSteps.correctedPeriodDays)}
+                    </span>
+                    <div className="mt-1 text-surface-600">дней в корректируемом периоде</div>
+                  </li>
+                  <li>
+                    <span className="font-medium">
+                      {formatMoney(desiredMonthly)} : {DAYS_IN_MONTH} ={' '}
+                      {formatMoney(correctionBudgetSteps.desiredDailyBudget)}
+                    </span>
+                    <div className="mt-1 text-surface-600">рублей — бюджет одного дня</div>
+                  </li>
+                  <li>
+                    <span className="font-medium">
+                      {formatMoney(correctionBudgetSteps.correctedPeriodDays)} ×{' '}
+                      {formatMoney(correctionBudgetSteps.desiredDailyBudget)} ={' '}
+                      {formatMoney(correctionBudgetSteps.correctedPeriodBudget)}
+                    </span>
+                    <div className="mt-1 text-surface-600">
+                      рублей — бюджет корректируемого периода
+                    </div>
+                  </li>
+                  <li>
+                    <span className="font-medium">
+                      {formatMoney(correctionBudgetSteps.correctedPeriodBudget)} −{' '}
+                      {formatMoney(totalExpenses)} ={' '}
+                      {formatMoney(correctionBudgetSteps.correctionPeriodBudget)}
+                    </span>
+                    <div className="mt-1 text-surface-600">
+                      рублей — бюджет на период коррекции
+                    </div>
+                  </li>
+                  <li>
+                    <span className="font-medium">
+                      {formatMoney(correctionBudgetSteps.correctionPeriodBudget)} :{' '}
+                      {formatMoney(correctionDays)} ={' '}
+                      {formatMoney(correctionBudgetSteps.correctionDailyBudget)}
+                    </span>
+                    <div className="mt-1 text-surface-600">
+                      рублей — бюджет дня на период коррекции
+                    </div>
+                  </li>
+                </ol>
+              </div>
+            )}
         </div>
       ) : (
         <div className="mt-6 text-sm text-surface-600">Недостаточно данных для расчёта</div>
