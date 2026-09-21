@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Button } from 'primereact/button'
 import { Calendar } from 'primereact/calendar'
 import { Checkbox } from 'primereact/checkbox'
@@ -11,8 +11,17 @@ import { useNavigate } from 'react-router-dom'
 import { Temporal } from '@js-temporal/polyfill'
 import { createTransaction, updateTransaction } from '../../api'
 import { categoryGroups, enumConfig } from '../../api/consts'
+import {
+  buildCurrencyRateViews,
+  getCurrencyOption,
+  readStoredCurrency,
+  storeCurrency,
+  useRubRates,
+  type CurrencyCode,
+} from '../../api/currency'
 import type { Transaction } from '../../api/types'
 import { CategoriesGroupCard } from '../../components/categories-group-card'
+import { CurrencyRates } from '../../components/currency-rates'
 
 
 type EditPageProps = {
@@ -56,20 +65,57 @@ export const EditPage = ({
   ])
   const [allowMultipleCategoryTags, setAllowMultipleCategoryTags] =
     useState(false)
+
+  const { rates, loading: ratesLoading } = useRubRates()
+  const rateViews = useMemo(() => buildCurrencyRateViews(rates), [rates])
+  const [selectedCurrency, setSelectedCurrency] =
+    useState<CurrencyCode | null>(readStoredCurrency)
+
+  useEffect(() => {
+    storeCurrency(selectedCurrency)
+  }, [selectedCurrency])
+
+  // Внутри формы все суммы хранятся в рублях — валюта влияет только на отображение.
+  const currencyRate =
+    selectedCurrency !== null
+      ? (rates?.rubPerUnit[selectedCurrency] ?? null)
+      : null
+  // В режиме «Закрыть период» панели валют нет, а если курс не загружен — ведём себя
+  // как с рублями, чтобы подписи не расходились с числами в полях.
+  const currencyOption =
+    mode === 'close_period' || currencyRate === null
+      ? null
+      : getCurrencyOption(selectedCurrency)
+  const toCurrency = (rub: number | null) =>
+    rub === null || currencyRate === null ? rub : rub / currencyRate
+  const fromCurrency = (value: number | null) =>
+    value === null || currencyRate === null ? value : value * currencyRate
+  // В БД суммы хранятся целыми рублями (integer), поэтому округляем при сохранении.
+  const roundRub = (value: number) => Math.round(value)
+  const formatRub = (value: number) =>
+    Math.round(value).toLocaleString('ru-RU')
+  const amountPlaceholder = currencyOption
+    ? `Сумма ${currencyOption.inForm}`
+    : 'Сумма в рублях'
+  const amountLabel =
+    currencyOption && amount !== null
+      ? `Сумма ${currencyOption.inForm} (${formatRub(amount)} руб)`
+      : 'Сумма'
   const maxVsSashaDiff = (onMax ?? 0) - (onSasha ?? 0)
   const sashaVsMaxDiff = (onSasha ?? 0) - (onMax ?? 0)
-  const formatDiffRub = (value: number) => {
-    const rounded = Math.round(value)
+  const formatDiff = (value: number) => {
+    const rounded = Math.round(toCurrency(value) ?? value)
+    const suffix = currencyOption ? currencyOption.code : 'руб'
 
     if (rounded > 0) {
-      return `+${rounded} руб`
+      return `+${rounded} ${suffix}`
     }
 
     if (rounded < 0) {
-      return `${rounded} руб`
+      return `${rounded} ${suffix}`
     }
 
-    return '0 руб'
+    return `0 ${suffix}`
   }
 
   const toggleCategory = (categoryValue: string) => {
@@ -184,17 +230,28 @@ export const EditPage = ({
           <label htmlFor="payment_date">Дата платежа</label>
         </FloatLabel>
 
+        {mode !== 'close_period' && (
+          <CurrencyRates
+            views={rateViews}
+            loading={ratesLoading}
+            date={rates?.date}
+            selectedCode={selectedCurrency}
+            onSelect={setSelectedCurrency}
+          />
+        )}
+
         <FloatLabel className="w-full mt-10">
           <InputNumber
             id="amount"
-            value={amount ?? null}
-            onChange={(e) => setAmount(e.value ?? null)}
+            value={toCurrency(amount)}
+            onChange={(e) => setAmount(fromCurrency(e.value ?? null))}
+            placeholder={amountPlaceholder}
             mode="decimal"
             minFractionDigits={0}
             maxFractionDigits={0}
             className="w-full"
           />
-          <label htmlFor="amount">Сумма</label>
+          <label htmlFor="amount">{amountLabel}</label>
         </FloatLabel>
 
         {mode !== 'close_period' && (
@@ -283,9 +340,9 @@ export const EditPage = ({
                 <FloatLabel className="flex-1">
                   <InputNumber
                     inputId="on_max"
-                    value={onMax}
+                    value={toCurrency(onMax)}
                     onValueChange={(e) => {
-                      const newOnMax = e.value ?? null
+                      const newOnMax = fromCurrency(e.value ?? null)
                       setOnMax(newOnMax)
 
                       if (amount !== null && newOnMax !== null) {
@@ -309,7 +366,7 @@ export const EditPage = ({
                     }}
                   />
                   <label htmlFor="on_max">
-                    На Максе ({Math.round(sharePercent)}%, {formatDiffRub(maxVsSashaDiff)})
+                    На Максе ({Math.round(sharePercent)}%, {formatDiff(maxVsSashaDiff)})
                   </label>
                 </FloatLabel>
               </div>
@@ -318,9 +375,9 @@ export const EditPage = ({
                 <FloatLabel className="flex-1">
                   <InputNumber
                     inputId="on_sasha"
-                    value={onSasha}
+                    value={toCurrency(onSasha)}
                     onValueChange={(e) => {
-                      const newOnSasha = e.value ?? null
+                      const newOnSasha = fromCurrency(e.value ?? null)
                       setOnSasha(newOnSasha)
 
                       if (amount !== null && newOnSasha !== null) {
@@ -344,7 +401,7 @@ export const EditPage = ({
                     }}
                   />
                   <label htmlFor="on_sasha">
-                    На Саше ({Math.round(100 - sharePercent)}%, {formatDiffRub(sashaVsMaxDiff)})
+                    На Саше ({Math.round(100 - sharePercent)}%, {formatDiff(sashaVsMaxDiff)})
                   </label>
                 </FloatLabel>
               </div>
@@ -405,13 +462,17 @@ export const EditPage = ({
                 return
               }
 
+              const savedAmount = roundRub(amount)
+              const savedOnMax = roundRub(onMax)
+              const savedOnSasha = savedAmount - savedOnMax
+
               const updated = await updateTransaction(transaction.id, {
                 payment_date: paymentDate.toISOString(),
                 payer: transaction.payer,
-                amount,
+                amount: savedAmount,
                 type: transaction.type,
-                on_max: onMax,
-                on_sasha: onSasha,
+                on_max: savedOnMax,
+                on_sasha: savedOnSasha,
                 category: selectedCategories[0],
                 tracking_start_date: transaction.tracking_start_date,
                 description,
@@ -447,18 +508,14 @@ export const EditPage = ({
               }
             }
 
+            const savedAmount = roundRub(amount)
             const resolvedOnMax =
               mode === 'close_period'
                 ? payer === 'max'
-                  ? amount
+                  ? savedAmount
                   : 0
-                : onMax!
-            const resolvedOnSasha =
-              mode === 'close_period'
-                ? payer === 'sasha'
-                  ? amount
-                  : 0
-                : onSasha!
+                : roundRub(onMax!)
+            const resolvedOnSasha = savedAmount - resolvedOnMax
 
             const resolvedTrackingStart =
               mode === 'close_period'
@@ -468,7 +525,7 @@ export const EditPage = ({
             const payload: Omit<Transaction, 'id' | 'created_at'> = {
               payment_date: paymentDate.toISOString(),
               payer,
-              amount,
+              amount: savedAmount,
               type: mode === 'close_period' ? 'transfer' : 'purchase',
               on_max: resolvedOnMax,
               on_sasha: resolvedOnSasha,
