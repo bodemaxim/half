@@ -93,10 +93,12 @@ export const deleteTransaction = async (id: Transaction['id']): Promise<boolean>
 
 type GetEnvelopesParams = {
   isActive?: boolean
+  user?: Envelope['user']
 }
 
 export const getEnvelopes = async ({
   isActive,
+  user,
 }: GetEnvelopesParams = {}): Promise<Envelope[]> => {
   let query = supabase
     .from('envelopes')
@@ -105,6 +107,10 @@ export const getEnvelopes = async ({
 
   if (typeof isActive === 'boolean') {
     query = query.eq('is_active', isActive)
+  }
+
+  if (user) {
+    query = query.eq('user', user)
   }
 
   const { error, data } = await query
@@ -188,10 +194,12 @@ export const deleteEnvelope = async (id: Envelope['id']): Promise<boolean> => {
 
 type GetSavingsOperationsParams = {
   envelopeId?: string
+  user?: Envelope['user']
 }
 
 export const getSavingsOperations = async ({
   envelopeId,
+  user,
 }: GetSavingsOperationsParams = {}): Promise<SavingsOperation[]> => {
   let query = supabase
     .from('savings_operations')
@@ -200,6 +208,10 @@ export const getSavingsOperations = async ({
 
   if (envelopeId) {
     query = query.eq('envelope_id', envelopeId)
+  }
+
+  if (user) {
+    query = query.eq('user', user)
   }
 
   const { error, data } = await query

@@ -120,6 +120,30 @@ const toDayKey = (value: Date) => {
   return `${year}-${month}-${day}`
 }
 
+const parseDayKey = (dayKey: string): Date | null => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dayKey)
+
+  if (!match) {
+    return null
+  }
+
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+  const parsed = new Date(year, month - 1, day)
+
+  if (
+    Number.isNaN(parsed.getTime()) ||
+    parsed.getFullYear() !== year ||
+    parsed.getMonth() !== month - 1 ||
+    parsed.getDate() !== day
+  ) {
+    return null
+  }
+
+  return normalizeDate(parsed)
+}
+
 const formatChartDayLabel = (value: Date) => {
   const dayMonth = value.toLocaleDateString('ru-RU', {
     day: '2-digit',
@@ -140,23 +164,6 @@ const getOperationDayKey = (createdAt: string) => {
   return toDayKey(normalizeDate(date))
 }
 
-const eachDayInclusive = (from: Date, to: Date): Date[] => {
-  const days: Date[] = []
-  const cursor = normalizeDate(from)
-  const end = normalizeDate(to)
-
-  if (cursor.getTime() > end.getTime()) {
-    return days
-  }
-
-  while (cursor.getTime() <= end.getTime()) {
-    days.push(new Date(cursor))
-    cursor.setDate(cursor.getDate() + 1)
-  }
-
-  return days
-}
-
 export const computeSavingsPeriodMetrics = (
   operations: SavingsOperation[],
   rates: RubRates | null,
@@ -166,6 +173,8 @@ export const computeSavingsPeriodMetrics = (
 ): SavingsPeriodMetrics => {
   const startMs = toStartOfDayMs(dateFrom)
   const endMs = toEndOfDayMs(dateTo)
+  const startDate = normalizeDate(dateFrom)
+  const endDate = normalizeDate(dateTo)
   const relevant = envelopeIds
     ? operations.filter((operation) => envelopeIds.has(operation.envelope_id))
     : operations
@@ -217,14 +226,39 @@ export const computeSavingsPeriodMetrics = (
     }
   }
 
-  const days = eachDayInclusive(dateFrom, dateTo)
-  let running = balanceBefore
   const chartLabels: string[] = []
   const chartValues: number[] = []
+  const startKey = toDayKey(startDate)
+  const endKey = toDayKey(endDate)
+  let lastPlottedKey = startKey
 
-  for (const day of days) {
-    running += byDay.get(toDayKey(day)) ?? 0
+  chartLabels.push(formatChartDayLabel(startDate))
+  chartValues.push(Math.round(balanceBefore))
+
+  let running = balanceBefore
+  const eventDays = [...byDay.keys()].sort()
+
+  for (const dayKey of eventDays) {
+    const day = parseDayKey(dayKey)
+
+    if (!day) {
+      continue
+    }
+
+    running += byDay.get(dayKey) ?? 0
+
+    if (dayKey === startKey) {
+      chartValues[0] = Math.round(running)
+      continue
+    }
+
     chartLabels.push(formatChartDayLabel(day))
+    chartValues.push(Math.round(running))
+    lastPlottedKey = dayKey
+  }
+
+  if (endKey !== lastPlottedKey) {
+    chartLabels.push(formatChartDayLabel(endDate))
     chartValues.push(Math.round(running))
   }
 

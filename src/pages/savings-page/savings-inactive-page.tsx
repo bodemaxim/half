@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { getEnvelopes, getSavingsOperations, updateEnvelope } from '../../api'
 import { useRubRates } from '../../api/currency'
 import type { Envelope, SavingsOperation } from '../../api/types'
-import { formatMoney, toRub } from './savings-utils'
+import { formatMoney, readSelectedSavingsUser, toRub } from './savings-utils'
 
 export const SavingsInactivePage = () => {
   const navigate = useNavigate()
@@ -15,8 +15,17 @@ export const SavingsInactivePage = () => {
   const { rates } = useRubRates()
 
   useEffect(() => {
-    void getSavingsOperations().then(setOperations)
-    void getEnvelopes({ isActive: false }).then(setEnvelopes)
+    const user = readSelectedSavingsUser()
+
+    if (!user) {
+      setOperations([])
+      setEnvelopes([])
+
+      return
+    }
+
+    void getSavingsOperations({ user }).then(setOperations)
+    void getEnvelopes({ isActive: false, user }).then(setEnvelopes)
   }, [])
 
   const balanceByEnvelopeId = useMemo(() => {

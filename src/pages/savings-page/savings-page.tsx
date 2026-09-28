@@ -15,6 +15,7 @@ import {
   formatSignedMoney,
   getQuickRangeDates,
   normalizeDate,
+  readSelectedSavingsUser,
   toRub,
   type SavingsQuickRange,
 } from './savings-utils'
@@ -51,8 +52,17 @@ export const SavingsPage = () => {
   )
 
   useEffect(() => {
-    void getSavingsOperations().then(setOperations)
-    void getEnvelopes({ isActive: true }).then(setEnvelopes)
+    const user = readSelectedSavingsUser()
+
+    if (!user) {
+      setOperations([])
+      setEnvelopes([])
+
+      return
+    }
+
+    void getSavingsOperations({ user }).then(setOperations)
+    void getEnvelopes({ isActive: true, user }).then(setEnvelopes)
   }, [])
 
   const activeEnvelopeIds = useMemo(
@@ -105,10 +115,10 @@ export const SavingsPage = () => {
         {
           label: 'Баланс накоплений',
           data: periodMetrics.chartValues,
-          borderColor: '#42A5F5',
-          backgroundColor: '#42A5F5',
-          tension: 0.2,
-          pointRadius: 3,
+          borderColor: '#43A047',
+          backgroundColor: '#43A047',
+          tension: 0.35,
+          pointRadius: 4,
           borderWidth: 2,
         },
       ],

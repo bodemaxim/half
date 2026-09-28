@@ -107,13 +107,21 @@ export const EnvelopeViewPage = () => {
   const reload = useCallback(async () => {
     if (!envelopeId) return
 
+    const user = readSelectedSavingsUser()
+
+    if (!user) {
+      navigate('/savings', { replace: true })
+
+      return
+    }
+
     const [loadedEnvelope, loadedEnvelopes, loadedOperations] = await Promise.all([
       getEnvelope(envelopeId),
-      getEnvelopes(),
-      getSavingsOperations(),
+      getEnvelopes({ user }),
+      getSavingsOperations({ user }),
     ])
 
-    if (!loadedEnvelope) {
+    if (!loadedEnvelope || loadedEnvelope.user !== user) {
       navigate('/savings', { replace: true })
 
       return
