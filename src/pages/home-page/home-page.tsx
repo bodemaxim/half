@@ -190,8 +190,16 @@ export const HomePage = ({ payer, setPayer, transactions }: HomePageProps) => {
         <div className="w-full md:w-1/2 mb-5 mx-auto">
           <Button
             severity="secondary"
-            label="Аналитика"
+            label="Аналитика трат"
             onClick={() => navigate('/analytics')}
+            className="w-full mt-2"
+          />
+        </div>
+        <div className="w-full md:w-1/2 mb-5 mx-auto">
+          <Button
+            severity="secondary"
+            label="Накопления"
+            onClick={() => navigate('/savings')}
             className="w-full mt-2"
           />
         </div>

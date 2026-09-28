@@ -284,7 +284,7 @@ export const AnalyticsPage = ({ payer }: AnalyticsPageProps) => {
     <div className="h-dvh p-5">
       <div className="w-full md:w-1/2 mx-auto">
         <div className="flex-b">
-          <h1 className="text-3xl font-bold m-0  mb-4">Аналитика</h1>
+          <h1 className="text-3xl font-bold m-0  mb-4">Аналитика трат</h1>
           <Button
             icon="pi pi-backward"
             rounded

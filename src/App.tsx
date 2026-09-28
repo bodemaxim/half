@@ -15,6 +15,10 @@ import { HomePage } from './pages/home-page/home-page'
 import { LoginPage } from './pages/login-page/login-page'
 import { EditPage } from './pages/edit-page/edit-page'
 import { AnalyticsPage } from './pages/analytics-page/analytics-page'
+import { SavingsPage } from './pages/savings-page/savings-page'
+import { SavingsInactivePage } from './pages/savings-page/savings-inactive-page'
+import { EnvelopeFormPage } from './pages/savings-page/envelope-form-page'
+import { EnvelopeViewPage } from './pages/savings-page/envelope-view-page'
 
 function getNewestTrackingStartDate(
   transactions: Transaction[],
@@ -177,6 +181,11 @@ function AppInner() {
           }
         />
         <Route path="/analytics" element={<AnalyticsPage payer={payer} />} />
+        <Route path="/savings" element={<SavingsPage />} />
+        <Route path="/savings/inactive" element={<SavingsInactivePage />} />
+        <Route path="/savings/new" element={<EnvelopeFormPage mode="new" />} />
+        <Route path="/savings/edit" element={<EnvelopeFormPage mode="edit" />} />
+        <Route path="/savings/view" element={<EnvelopeViewPage />} />
         <Route
           path="/edit/:id"
           element={
