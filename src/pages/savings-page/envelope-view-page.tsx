@@ -226,7 +226,7 @@ export const EnvelopeViewPage = () => {
     setEditingOperation(operation)
     setAmount(Math.abs(operation.amount))
     setDescription(operation.description ?? '')
-    setSelectedCurrency(operation.currency)
+    setSelectedCurrency(operation.currency === 'RUB' ? null : operation.currency)
     setOperationDate(new Date(operation.created_at))
 
     if (
