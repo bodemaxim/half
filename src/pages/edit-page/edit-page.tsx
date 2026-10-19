@@ -67,11 +67,14 @@ export const EditPage = ({
     useState(false)
 
   const { rates, loading: ratesLoading } = useRubRates()
-  const rateViews = useMemo(() => buildCurrencyRateViews(rates), [rates])
   const [selectedCurrency, setSelectedCurrency] =
     useState<CurrencyCode | null>(readStoredCurrency)
   const [includeFee, setIncludeFee] = useState(true)
   const currencyFeeMultiplier = 1.045
+  const rateViews = useMemo(
+    () => buildCurrencyRateViews(rates, includeFee ? currencyFeeMultiplier : 1),
+    [rates, includeFee],
+  )
 
   useEffect(() => {
     storeCurrency(selectedCurrency)

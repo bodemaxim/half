@@ -52,6 +52,7 @@ export type CurrencyRateView = {
 
 export const buildCurrencyRateViews = (
   rates: RubRates | null,
+  feeMultiplier = 1,
 ): CurrencyRateView[] => {
   const rateViews: CurrencyRateView[] = []
 
@@ -60,12 +61,14 @@ export const buildCurrencyRateViews = (
 
     if (rubPerUnit === undefined || rubPerUnit <= 0) continue
 
+    const effectiveRubPerUnit = rubPerUnit * feeMultiplier
+
     if (currency.direction === 'rubPerUnit') {
       rateViews.push({
         code: currency.code,
         label: currency.label,
-        rubPerUnit,
-        text: `1 ${currency.code} = ${formatNumber(rubPerUnit)} ₽`,
+        rubPerUnit: effectiveRubPerUnit,
+        text: `1 ${currency.code} = ${formatNumber(effectiveRubPerUnit)} ₽`,
       })
 
       continue
@@ -75,8 +78,8 @@ export const buildCurrencyRateViews = (
     rateViews.push({
       code: currency.code,
       label: currency.label,
-      rubPerUnit,
-      text: `1 ₽ = ${formatNumber(1 / rubPerUnit)} ${currency.code}`,
+      rubPerUnit: effectiveRubPerUnit,
+      text: `1 ₽ = ${formatNumber(1 / effectiveRubPerUnit)} ${currency.code}`,
     })
   }
 
