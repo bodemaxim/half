@@ -33,6 +33,7 @@ export const enumConfig = {
       { value: 'other', label: 'Другое' },
       { value: 'apt_eleven', label: 'кв 11'},
       { value: 'subscriptions', label: 'Подписки'},
+      { value: 'business', label: 'Бизнес' },
       {value: 'smoke', label: 'Курение'},
       {value: 'unknown', label: 'Неизвестно'}
     ],
@@ -126,6 +127,7 @@ export const categoryGroups = {
     'body-bg-color': '#EEF2FF',
     categories: [
       { value: 'subscriptions', label: 'Подписки' },
+      { value: 'business', label: 'Бизнес' },
       { value: 'other', label: 'Другое' },
       { value: 'close_period', label: 'Закрытие периода' },
       { value: 'unknown', label: 'Неизвестно' },

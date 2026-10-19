@@ -1,3 +1,4 @@
+import { Checkbox } from 'primereact/checkbox'
 import { Panel } from 'primereact/panel'
 import {
   type CurrencyCode,
@@ -20,6 +21,9 @@ type CurrencyRatesProps = {
   date?: string
   selectedCode: CurrencyCode | null
   onSelect: (code: CurrencyCode | null) => void
+  showFeeCheckbox?: boolean
+  includeFee?: boolean
+  onIncludeFeeChange?: (checked: boolean) => void
 }
 
 export const CurrencyRates = ({
@@ -28,6 +32,9 @@ export const CurrencyRates = ({
   date,
   selectedCode,
   onSelect,
+  showFeeCheckbox = false,
+  includeFee = false,
+  onIncludeFeeChange,
 }: CurrencyRatesProps) => {
   return (
     <Panel header="Валюта" className="w-full mt-10">
@@ -63,6 +70,22 @@ export const CurrencyRates = ({
               )
             })}
           </div>
+
+          {showFeeCheckbox && selectedCode !== null && (
+            <div className="flex items-center gap-2">
+              <Checkbox
+                inputId="include_currency_fee"
+                checked={includeFee}
+                onChange={(e) => onIncludeFeeChange?.(e.checked ?? false)}
+              />
+              <label
+                htmlFor="include_currency_fee"
+                className="cursor-pointer select-none text-sm text-neutral-800"
+              >
+                Накинуть 4.5% чтобы учесть комиссии
+              </label>
+            </div>
+          )}
 
           {date && (
             <div className="text-xs text-surface-500">

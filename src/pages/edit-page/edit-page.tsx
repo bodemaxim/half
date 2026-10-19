@@ -70,6 +70,8 @@ export const EditPage = ({
   const rateViews = useMemo(() => buildCurrencyRateViews(rates), [rates])
   const [selectedCurrency, setSelectedCurrency] =
     useState<CurrencyCode | null>(readStoredCurrency)
+  const [includeFee, setIncludeFee] = useState(true)
+  const currencyFeeMultiplier = 1.045
 
   useEffect(() => {
     storeCurrency(selectedCurrency)
@@ -80,6 +82,10 @@ export const EditPage = ({
     selectedCurrency !== null
       ? (rates?.rubPerUnit[selectedCurrency] ?? null)
       : null
+  const effectiveRate =
+    currencyRate === null
+      ? null
+      : currencyRate * (includeFee ? currencyFeeMultiplier : 1)
   // В режиме «Закрыть период» панели валют нет, а если курс не загружен — ведём себя
   // как с рублями, чтобы подписи не расходились с числами в полях.
   const currencyOption =
@@ -87,9 +93,9 @@ export const EditPage = ({
       ? null
       : getCurrencyOption(selectedCurrency)
   const toCurrency = (rub: number | null) =>
-    rub === null || currencyRate === null ? rub : rub / currencyRate
+    rub === null || effectiveRate === null ? rub : rub / effectiveRate
   const fromCurrency = (value: number | null) =>
-    value === null || currencyRate === null ? value : value * currencyRate
+    value === null || effectiveRate === null ? value : value * effectiveRate
   // В БД суммы хранятся целыми рублями (integer), поэтому округляем при сохранении.
   const roundRub = (value: number) => Math.round(value)
   const formatRub = (value: number) =>
@@ -237,6 +243,18 @@ export const EditPage = ({
             date={rates?.date}
             selectedCode={selectedCurrency}
             onSelect={setSelectedCurrency}
+            showFeeCheckbox
+            includeFee={includeFee}
+            onIncludeFeeChange={(checked) => {
+              setIncludeFee(checked)
+              setAmount((prev) => {
+                if (prev === null || currencyRate === null) return prev
+
+                return checked
+                  ? prev * currencyFeeMultiplier
+                  : prev / currencyFeeMultiplier
+              })
+            }}
           />
         )}
 

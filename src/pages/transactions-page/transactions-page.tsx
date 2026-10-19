@@ -44,8 +44,8 @@ export const TransactionsPage = ({
     const selectedUser = localStorage.getItem(selectedUserStorageKey)
 
     return transactions.filter((transaction) => {
-      if (transaction.category === 'gifts') {
-        return false
+      if (transaction.category === 'close_period') {
+        return true
       }
 
       if (selectedUser === 'sasha') {

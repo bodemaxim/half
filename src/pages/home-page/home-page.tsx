@@ -85,11 +85,11 @@ export const HomePage = ({ payer, setPayer, transactions }: HomePageProps) => {
     return { onSasha, onMax, realSasha, realMax }
   })()
 
-  const closingPeriodGapSasha = Math.abs(
-    spentForCurrentPeriod.realSasha - spentForCurrentPeriod.onSasha,
+  const closingPeriodGapSasha = Math.round(
+    Math.abs(spentForCurrentPeriod.realSasha - spentForCurrentPeriod.onSasha),
   )
-  const closingPeriodGapMax = Math.abs(
-    spentForCurrentPeriod.realMax - spentForCurrentPeriod.onMax,
+  const closingPeriodGapMax = Math.round(
+    Math.abs(spentForCurrentPeriod.realMax - spentForCurrentPeriod.onMax),
   )
 
   /** Выбранный пользователь должен перевести второму (кнопка «Закрыть период» активна). */
