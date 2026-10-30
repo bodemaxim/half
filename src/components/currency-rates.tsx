@@ -1,7 +1,9 @@
 import { Checkbox } from 'primereact/checkbox'
+import { InputNumber } from 'primereact/inputnumber'
 import { Panel } from 'primereact/panel'
 import {
   type CurrencyCode,
+  type CurrencyFeeKind,
   type CurrencyRateView,
 } from '../api/currency'
 
@@ -22,8 +24,10 @@ type CurrencyRatesProps = {
   selectedCode: CurrencyCode | null
   onSelect: (code: CurrencyCode | null) => void
   showFeeCheckbox?: boolean
-  includeFee?: boolean
-  onIncludeFeeChange?: (checked: boolean) => void
+  feeKind?: CurrencyFeeKind
+  customFeePercent?: number | null
+  onFeeKindChange?: (kind: CurrencyFeeKind) => void
+  onCustomFeePercentChange?: (value: number | null) => void
 }
 
 export const CurrencyRates = ({
@@ -33,9 +37,14 @@ export const CurrencyRates = ({
   selectedCode,
   onSelect,
   showFeeCheckbox = false,
-  includeFee = false,
-  onIncludeFeeChange,
+  feeKind = 'none',
+  customFeePercent = null,
+  onFeeKindChange,
+  onCustomFeePercentChange,
 }: CurrencyRatesProps) => {
+  const toggleFeeKind = (kind: Exclude<CurrencyFeeKind, 'none'>) => {
+    onFeeKindChange?.(feeKind === kind ? 'none' : kind)
+  }
   return (
     <Panel header="Валюта" className="w-full mt-10">
       {loading ? (
@@ -72,18 +81,57 @@ export const CurrencyRates = ({
           </div>
 
           {showFeeCheckbox && selectedCode !== null && (
-            <div className="flex items-center gap-2">
-              <Checkbox
-                inputId="include_currency_fee"
-                checked={includeFee}
-                onChange={(e) => onIncludeFeeChange?.(e.checked ?? false)}
-              />
-              <label
-                htmlFor="include_currency_fee"
-                className="cursor-pointer select-none text-sm text-neutral-800"
-              >
-                Накинуть 4.5% чтобы учесть комиссии
-              </label>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  inputId="include_currency_fee_45"
+                  checked={feeKind === '4.5'}
+                  onChange={() => toggleFeeKind('4.5')}
+                />
+                <label
+                  htmlFor="include_currency_fee_45"
+                  className="cursor-pointer select-none text-sm text-neutral-800"
+                >
+                  Накинуть 4.5% чтобы учесть комиссии
+                </label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  inputId="include_currency_fee_23"
+                  checked={feeKind === '2.3'}
+                  onChange={() => toggleFeeKind('2.3')}
+                />
+                <label
+                  htmlFor="include_currency_fee_23"
+                  className="cursor-pointer select-none text-sm text-neutral-800"
+                >
+                  Накинуть 2.3% чтобы учесть комиссии
+                </label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  inputId="include_currency_fee_custom"
+                  checked={feeKind === 'custom'}
+                  onChange={() => toggleFeeKind('custom')}
+                />
+                <label
+                  htmlFor="include_currency_fee_custom"
+                  className="cursor-pointer select-none text-sm text-neutral-800"
+                >
+                  Накинуть своё значение
+                </label>
+                <InputNumber
+                  inputId="currency_fee_custom_percent"
+                  value={customFeePercent}
+                  onValueChange={(e) =>
+                    onCustomFeePercentChange?.(e.value ?? null)
+                  }
+                  min={0}
+                  maxFractionDigits={2}
+                  suffix=" %"
+                  className="w-28"
+                />
+              </div>
             </div>
           )}
 

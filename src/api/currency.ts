@@ -39,6 +39,41 @@ export const storeCurrency = (code: CurrencyCode | null) => {
   localStorage.setItem(selectedCurrencyStorageKey, code)
 }
 
+export type CurrencyFeeKind = 'none' | '4.5' | '2.3' | 'custom'
+
+const customFeeStorageKey = 'half_currency_fee_custom'
+
+export const readStoredCustomFee = (): number | null => {
+  const raw = localStorage.getItem(customFeeStorageKey)
+
+  if (raw === null) return null
+
+  const value = Number(raw)
+
+  return Number.isFinite(value) && value >= 0 ? value : null
+}
+
+export const storeCustomFee = (value: number | null) => {
+  if (value === null) {
+    localStorage.removeItem(customFeeStorageKey)
+
+    return
+  }
+
+  localStorage.setItem(customFeeStorageKey, String(value))
+}
+
+export const currencyFeePercent = (
+  kind: CurrencyFeeKind,
+  customPercent: number | null,
+) => {
+  if (kind === '4.5') return 4.5
+  if (kind === '2.3') return 2.3
+  if (kind === 'custom') return customPercent ?? 0
+
+  return 0
+}
+
 const formatNumber = (value: number) =>
   value.toLocaleString('ru-RU', { maximumFractionDigits: 2 })
 

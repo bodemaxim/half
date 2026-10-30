@@ -13,11 +13,15 @@ import { createTransaction, updateTransaction } from '../../api'
 import { categoryGroups, enumConfig } from '../../api/consts'
 import {
   buildCurrencyRateViews,
+  currencyFeePercent,
   getCurrencyOption,
   readStoredCurrency,
+  readStoredCustomFee,
   storeCurrency,
+  storeCustomFee,
   useRubRates,
   type CurrencyCode,
+  type CurrencyFeeKind,
 } from '../../api/currency'
 import type { Transaction } from '../../api/types'
 import { CategoriesGroupCard } from '../../components/categories-group-card'
@@ -69,11 +73,14 @@ export const EditPage = ({
   const { rates, loading: ratesLoading } = useRubRates()
   const [selectedCurrency, setSelectedCurrency] =
     useState<CurrencyCode | null>(readStoredCurrency)
-  const [includeFee, setIncludeFee] = useState(true)
-  const currencyFeeMultiplier = 1.045
+  const [feeKind, setFeeKind] = useState<CurrencyFeeKind>('4.5')
+  const [customFeePercent, setCustomFeePercent] = useState<number | null>(
+    readStoredCustomFee,
+  )
+  const feeMultiplier = 1 + currencyFeePercent(feeKind, customFeePercent) / 100
   const rateViews = useMemo(
-    () => buildCurrencyRateViews(rates, includeFee ? currencyFeeMultiplier : 1),
-    [rates, includeFee],
+    () => buildCurrencyRateViews(rates, feeMultiplier),
+    [rates, feeMultiplier],
   )
 
   useEffect(() => {
@@ -86,9 +93,7 @@ export const EditPage = ({
       ? (rates?.rubPerUnit[selectedCurrency] ?? null)
       : null
   const effectiveRate =
-    currencyRate === null
-      ? null
-      : currencyRate * (includeFee ? currencyFeeMultiplier : 1)
+    currencyRate === null ? null : currencyRate * feeMultiplier
   // В режиме «Закрыть период» панели валют нет, а если курс не загружен — ведём себя
   // как с рублями, чтобы подписи не расходились с числами в полях.
   const currencyOption =
@@ -247,15 +252,33 @@ export const EditPage = ({
             selectedCode={selectedCurrency}
             onSelect={setSelectedCurrency}
             showFeeCheckbox
-            includeFee={includeFee}
-            onIncludeFeeChange={(checked) => {
-              setIncludeFee(checked)
+            feeKind={feeKind}
+            customFeePercent={customFeePercent}
+            onFeeKindChange={(nextKind) => {
+              const fromMultiplier =
+                1 + currencyFeePercent(feeKind, customFeePercent) / 100
+              const toMultiplier =
+                1 + currencyFeePercent(nextKind, customFeePercent) / 100
+
+              setFeeKind(nextKind)
               setAmount((prev) => {
                 if (prev === null || currencyRate === null) return prev
 
-                return checked
-                  ? prev * currencyFeeMultiplier
-                  : prev / currencyFeeMultiplier
+                return (prev / fromMultiplier) * toMultiplier
+              })
+            }}
+            onCustomFeePercentChange={(value) => {
+              const fromMultiplier =
+                1 + currencyFeePercent(feeKind, customFeePercent) / 100
+              const toMultiplier = 1 + currencyFeePercent('custom', value) / 100
+
+              storeCustomFee(value)
+              setCustomFeePercent(value)
+              setFeeKind('custom')
+              setAmount((prev) => {
+                if (prev === null || currencyRate === null) return prev
+
+                return (prev / fromMultiplier) * toMultiplier
               })
             }}
           />
